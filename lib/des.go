@@ -1,8 +1,11 @@
 package lib
 
+/*
+ANS X9.24-1:2009 (Retail Financial Services Symmetric Key Management)
+*/
+
 import (
 	"fmt"
-	
 	"github.com/moov-io/dukpt/encryption"
 )
 
