@@ -1,7 +1,7 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/moov-io/pinblock v0.0.0-20230712191128-bf6843b37631 h1:4VGZUmArudgsdOYvz+gDBoiqtFUIKA0/1IEGiXuzSEY=
-github.com/moov-io/pinblock v0.0.0-20230712191128-bf6843b37631/go.mod h1:Fib2p5PN+Dp0zFDF+7dLpkUConoSfa8zSqXc5e22H5Y=
+github.com/moov-io/pinblock v0.0.0-20230821150507-0de089a2b3ea h1:T52LefB40yQ8vMsP8UuRzowvH4g+YQ/2L+FSUC/q8oI=
+github.com/moov-io/pinblock v0.0.0-20230821150507-0de089a2b3ea/go.mod h1:Fib2p5PN+Dp0zFDF+7dLpkUConoSfa8zSqXc5e22H5Y=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=

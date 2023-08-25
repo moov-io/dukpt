@@ -28,24 +28,24 @@ func NewTripleDesECB(key []byte) (*DesECB, error) {
 		break
 	}
 
-	cipher, err := des.NewTripleDESCipher(tripleDESKey)
+	cp, err := des.NewTripleDESCipher(tripleDESKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
 
 	return &DesECB{
-		cipherBlock: cipher,
+		cipherBlock: cp,
 	}, nil
 }
 
 func NewDesECB(key []byte) (*DesECB, error) {
-	cipher, err := des.NewCipher(key)
+	cp, err := des.NewCipher(key)
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
 
 	return &DesECB{
-		cipherBlock: cipher,
+		cipherBlock: cp,
 	}, nil
 }
 
@@ -67,4 +67,11 @@ func (a *DesECB) Decrypt(cipherText []byte) ([]byte, error) {
 	plainText := make([]byte, len(cipherText))
 	a.cipherBlock.Decrypt(plainText, cipherText)
 	return plainText, nil
+}
+
+func (a *DesECB) GetBlock() cipher.Block {
+	if a == nil {
+		return nil
+	}
+	return a.cipherBlock
 }

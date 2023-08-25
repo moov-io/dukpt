@@ -14,3 +14,10 @@ func HexEncode(data []byte) []byte {
 
 	return out
 }
+
+func HexDecode(data []byte) []byte {
+	out := make([]byte, hex.EncodedLen(len(data)))
+
+	hex.Encode(out, data)
+	return out
+}
