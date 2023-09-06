@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"crypto/des"
 	"fmt"
+	"github.com/moov-io/dukpt/pkg/encryption"
 	"math/big"
-
-	"github.com/moov-io/dukpt/encryption"
 )
 
 const (

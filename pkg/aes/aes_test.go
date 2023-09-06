@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/moov-io/dukpt/lib"
+	"github.com/moov-io/dukpt/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -121,19 +121,19 @@ func TestAES128(t *testing.T) {
 	require.Equal(t, expectedIK, ik)
 
 	// Advance to first KSN
-	ksn, err := lib.GetAesNextKsn(append(initialKeyID, make([]byte, 4)...))
+	ksn, err := pkg.GetAesNextKsn(append(initialKeyID, make([]byte, 4)...))
 	require.NoError(t, err)
 
 	for index, item := range InitialSequence {
 		t.Run(fmt.Sprintf("Sequence #%d KSN: %s", index+1, item.Ksn), func(t *testing.T) {
 
-			valid := lib.IsValidAesKsn(ksn)
+			valid := pkg.IsValidAesKsn(ksn)
 			require.Equal(t, true, valid)
-			require.Equal(t, item.Ksn, strings.ToUpper(lib.HexEncode(ksn)))
+			require.Equal(t, item.Ksn, strings.ToUpper(pkg.HexEncode(ksn)))
 
 			transactionKey, err := DeriveCurrentTransactionKey(ik, ksn)
 			require.NoError(t, err)
-			require.Equal(t, item.CurrentKey, strings.ToUpper(lib.HexEncode(transactionKey)))
+			require.Equal(t, item.CurrentKey, strings.ToUpper(pkg.HexEncode(transactionKey)))
 
 			encPinblock, err := EncryptPin(transactionKey, ksn, pin, pan, KeyAES128Type)
 			require.NoError(t, err)
@@ -142,42 +142,42 @@ func TestAES128(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, pin, decPinblock)
 
-			genMac, err := GenerateCMAC(transactionKey, ksn, macData, KeyAES128Type, lib.ActionRequest)
+			genMac, err := GenerateCMAC(transactionKey, ksn, macData, KeyAES128Type, pkg.ActionRequest)
 			require.NoError(t, err)
-			require.Equal(t, item.CMACRequest, strings.ToUpper(lib.HexEncode(genMac)))
+			require.Equal(t, item.CMACRequest, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			genMac, err = GenerateCMAC(transactionKey, ksn, macData, KeyAES128Type, lib.ActionResponse)
+			genMac, err = GenerateCMAC(transactionKey, ksn, macData, KeyAES128Type, pkg.ActionResponse)
 			require.NoError(t, err)
-			require.Equal(t, item.CMACResponse, strings.ToUpper(lib.HexEncode(genMac)))
+			require.Equal(t, item.CMACResponse, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, lib.ActionRequest)
+			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, pkg.ActionRequest)
 			require.NoError(t, err)
-			require.Equal(t, item.HMACRequest, strings.ToUpper(lib.HexEncode(genMac)))
+			require.Equal(t, item.HMACRequest, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, lib.ActionResponse)
+			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, pkg.ActionResponse)
 			require.NoError(t, err)
-			require.Equal(t, item.HMACResponse, strings.ToUpper(lib.HexEncode(genMac)))
+			require.Equal(t, item.HMACResponse, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			encData, err := EncryptData(transactionKey, ksn, nil, macData, KeyAES128Type, lib.ActionRequest)
+			encData, err := EncryptData(transactionKey, ksn, nil, macData, KeyAES128Type, pkg.ActionRequest)
 			require.NoError(t, err)
-			require.Equal(t, item.DataRequest, strings.ToUpper(lib.HexEncode(encData)))
+			require.Equal(t, item.DataRequest, strings.ToUpper(pkg.HexEncode(encData)))
 
-			decData, err := DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, lib.ActionRequest)
+			decData, err := DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, pkg.ActionRequest)
 			require.NoError(t, err)
 			require.Len(t, decData, 32)
 			require.Equal(t, macData, decData[:len(macData)])
 
-			encData, err = EncryptData(transactionKey, ksn, nil, macData, KeyAES128Type, lib.ActionResponse)
+			encData, err = EncryptData(transactionKey, ksn, nil, macData, KeyAES128Type, pkg.ActionResponse)
 			require.NoError(t, err)
-			require.Equal(t, item.DataResponse, strings.ToUpper(lib.HexEncode(encData)))
+			require.Equal(t, item.DataResponse, strings.ToUpper(pkg.HexEncode(encData)))
 
-			decData, err = DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, lib.ActionResponse)
+			decData, err = DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, pkg.ActionResponse)
 			require.NoError(t, err)
 			require.Len(t, decData, 32)
 			require.Equal(t, macData, decData[:len(macData)])
 
 			// next KSN
-			ksn, err = lib.GetAesNextKsn(ksn)
+			ksn, err = pkg.GetAesNextKsn(ksn)
 			require.NoError(t, err)
 		})
 	}

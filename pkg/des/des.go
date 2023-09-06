@@ -7,10 +7,10 @@ ANS X9.24-1:2009 (Retail Financial Services Symmetric Key Management)
 import (
 	"crypto/cipher"
 	"fmt"
+	"github.com/moov-io/dukpt/pkg/encryption"
 	"strings"
 
-	"github.com/moov-io/dukpt/encryption"
-	"github.com/moov-io/dukpt/lib"
+	"github.com/moov-io/dukpt/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
 
@@ -142,7 +142,7 @@ func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, erro
 		return nil, err
 	}
 
-	return encryptPinblock(currentKey, lib.HexDecode(blockstr))
+	return encryptPinblock(currentKey, pkg.HexDecode(blockstr))
 }
 
 // Decrypt PIN block using DUKPT transaction key
@@ -172,7 +172,7 @@ func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (strin
 		return "", err
 	}
 
-	pinstr, err := formatter.Decode(lib.HexEncode(pinBlock), pan)
+	pinstr, err := formatter.Decode(pkg.HexEncode(pinBlock), pan)
 	if err != nil {
 		return "", err
 	}
@@ -198,12 +198,12 @@ func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 	dataKey := make([]byte, keyLen)
 	copy(dataKey, currentKey)
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
-	if action == lib.ActionRequest {
+	if action == pkg.ActionRequest {
 		dataKey[6] ^= 0xFF
 		dataKey[14] ^= 0xFF
 	} else {
@@ -273,12 +273,12 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 	dataKey := make([]byte, keyLen)
 	copy(dataKey, currentKey)
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
-	if action == lib.ActionRequest {
+	if action == pkg.ActionRequest {
 		dataKey[5] ^= 0xFF
 		dataKey[13] ^= 0xFF
 	} else {
@@ -345,12 +345,12 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 	dataKey := make([]byte, keyLen)
 	copy(dataKey, currentKey)
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
-	if action == lib.ActionRequest {
+	if action == pkg.ActionRequest {
 		dataKey[5] ^= 0xFF
 		dataKey[13] ^= 0xFF
 	} else {

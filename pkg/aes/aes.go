@@ -5,10 +5,10 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
+	"github.com/moov-io/dukpt/pkg/encryption"
 
 	"github.com/chmike/cmac-go"
-	"github.com/moov-io/dukpt/encryption"
-	"github.com/moov-io/dukpt/lib"
+	"github.com/moov-io/dukpt/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
 
@@ -70,7 +70,7 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 	transactionKey := make([]byte, len(ik))
 	copy(transactionKey, ik)
 
-	tc := lib.GetAesTcFromKsn(ksn)
+	tc := pkg.GetAesTcFromKsn(ksn)
 	var workingTc uint32
 	var derivationData *keyDerivationData
 
@@ -136,7 +136,7 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 		return nil, err
 	}
 
-	return lib.HexDecode(blockstr), nil
+	return pkg.HexDecode(blockstr), nil
 }
 
 // Decrypt PIN block using DUKPT transaction key
@@ -176,7 +176,7 @@ func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) 
 	}
 
 	formatter := formats.NewISO4(cipher)
-	blockstr, err := formatter.Decode(lib.HexEncode(ciphertext), pan)
+	blockstr, err := formatter.Decode(pkg.HexEncode(ciphertext), pan)
 	if err != nil {
 		return "", err
 	}
@@ -204,8 +204,8 @@ func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 		return nil, err
 	}
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	params := derivationParams{
@@ -214,7 +214,7 @@ func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 		Ksn:        ksn,
 		CurrentKey: currentKey,
 	}
-	if action == lib.ActionResponse {
+	if action == pkg.ActionResponse {
 		params.KeyUsage = usageForMessageVerification
 	}
 
@@ -253,8 +253,8 @@ func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 		return nil, err
 	}
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	params := derivationParams{
@@ -263,7 +263,7 @@ func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 		Ksn:        ksn,
 		CurrentKey: currentKey,
 	}
-	if action == lib.ActionResponse {
+	if action == pkg.ActionResponse {
 		params.KeyUsage = usageForMessageVerification
 	}
 
@@ -299,8 +299,8 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 		return nil, err
 	}
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	params := derivationParams{
@@ -309,7 +309,7 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 		Ksn:        ksn,
 		CurrentKey: currentKey,
 	}
-	if action == lib.ActionResponse {
+	if action == pkg.ActionResponse {
 		params.KeyUsage = usageForDataDecrypt
 	}
 
@@ -364,8 +364,8 @@ func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string)
 		return "", err
 	}
 
-	if action != lib.ActionRequest && action != lib.ActionResponse {
-		action = lib.ActionRequest
+	if action != pkg.ActionRequest && action != pkg.ActionResponse {
+		action = pkg.ActionRequest
 	}
 
 	params := derivationParams{
@@ -374,7 +374,7 @@ func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string)
 		Ksn:        ksn,
 		CurrentKey: currentKey,
 	}
-	if action == lib.ActionResponse {
+	if action == pkg.ActionResponse {
 		params.KeyUsage = usageForDataDecrypt
 	}
 
