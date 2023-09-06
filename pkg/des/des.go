@@ -7,7 +7,7 @@ ANS X9.24-1:2009 (Retail Financial Services Symmetric Key Management)
 import (
 	"crypto/cipher"
 	"fmt"
-	"github.com/moov-io/dukpt/pkg/encryption"
+	"github.com/moov-io/dukpt/encryption"
 	"strings"
 
 	"github.com/moov-io/dukpt/pkg"

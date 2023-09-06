@@ -5,9 +5,8 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
-	"github.com/moov-io/dukpt/pkg/encryption"
-
 	"github.com/chmike/cmac-go"
+	"github.com/moov-io/dukpt/encryption"
 	"github.com/moov-io/dukpt/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
