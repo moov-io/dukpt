@@ -9,14 +9,21 @@ import (
 	"github.com/moov-io/dukpt/encryption"
 )
 
+const (
+	keyLen       = 16
+	keySerialLen = 10
+	tcBits       = 21
+	desBlockLen  = 8
+)
+
 func serializeKeySerialNumber(ksn []byte) []byte {
 	var ksnBytes []byte
 
 	// If the key serial number is less than 10 bytes, pad to the left with hex "FF" bytes
-	if len(ksn) < KeySerialLen {
-		ksnBytes = append(bytes.Repeat([]byte{0xFF}, KeySerialLen-len(ksn)), ksn...)
+	if len(ksn) < keySerialLen {
+		ksnBytes = append(bytes.Repeat([]byte{0xFF}, keySerialLen-len(ksn)), ksn...)
 	} else {
-		ksnBytes = make([]byte, KeySerialLen)
+		ksnBytes = make([]byte, keySerialLen)
 		copy(ksnBytes, ksn)
 	}
 
@@ -25,7 +32,7 @@ func serializeKeySerialNumber(ksn []byte) []byte {
 
 // Extract transaction counter value from KSN. The transaction counter is the last 21 bits of the KSN.
 func removeTransactionCounter(ksn []byte) {
-	if len(ksn) != KeySerialLen {
+	if len(ksn) != keySerialLen {
 		return
 	}
 
@@ -36,7 +43,7 @@ func removeTransactionCounter(ksn []byte) {
 }
 
 func serializeKeyWithHexadecimal(key []byte) {
-	if len(key) != KeyLen {
+	if len(key) != keyLen {
 		return
 	}
 
@@ -52,11 +59,11 @@ func serializeKeyWithHexadecimal(key []byte) {
 
 // Extract transaction counter value from KSN. The transaction counter is the last 21 bits of the KSN.
 func getTransactionCounter(ksn []byte) (int64, error) {
-	if len(ksn) != KeySerialLen {
+	if len(ksn) != keySerialLen {
 		return 0, fmt.Errorf("invalid key length")
 	}
 
-	lastBytes := ksn[KeyLen-3:]
+	lastBytes := ksn[keyLen-3:]
 	lastBytes[0] = lastBytes[0] & 0x1f
 	return int64(big.NewInt(0).SetBytes(lastBytes).Uint64()), nil
 }
@@ -111,7 +118,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 5) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
 	for index, _ := range cryptoReg1 {
-		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+KeyLen/2]
+		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
 	}
 
 	// 6) Crypto Register-1 DEA-encrypted using, as the key, the left half of the Key Register goes to Crypto Register-1
@@ -123,18 +130,18 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 7) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
 	for index, _ := range cryptoReg1 {
-		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+KeyLen/2]
+		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
 	}
 
 	return append(cryptoReg1, cryptoReg2...), nil
 }
 
 func encryptPinblock(currentKey, pinblock []byte) ([]byte, error) {
-	if len(currentKey) != KeyLen {
-		return nil, fmt.Errorf("current key length must be %d bytes", KeyLen)
+	if len(currentKey) != keyLen {
+		return nil, fmt.Errorf("current key length must be %d bytes", keyLen)
 	}
 
-	pinKey := make([]byte, KeyLen)
+	pinKey := make([]byte, keyLen)
 	copy(pinKey, currentKey)
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
@@ -147,11 +154,11 @@ func encryptPinblock(currentKey, pinblock []byte) ([]byte, error) {
 }
 
 func decryptPinblock(currentKey, ciphertext []byte) ([]byte, error) {
-	if len(currentKey) != KeyLen {
-		return nil, fmt.Errorf("current key length must be %d bytes", KeyLen)
+	if len(currentKey) != keyLen {
+		return nil, fmt.Errorf("current key length must be %d bytes", keyLen)
 	}
 
-	pinKey := make([]byte, KeyLen)
+	pinKey := make([]byte, keyLen)
 	copy(pinKey, currentKey)
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
