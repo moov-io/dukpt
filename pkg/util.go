@@ -35,7 +35,7 @@ func GetAesTcFromKsn(ksn []byte) uint32 {
 	return tc
 }
 
-func GetAesNextKsn(ksn []byte) ([]byte, error) {
+func GenerateNextKsn(ksn []byte) ([]byte, error) {
 	var tcMax uint32 = 0xFFFF0000
 	tc := GetAesTcFromKsn(ksn)
 

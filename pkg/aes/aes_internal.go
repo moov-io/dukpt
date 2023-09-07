@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"encoding/binary"
 	"errors"
+
 	"github.com/moov-io/dukpt/encryption"
 	"github.com/moov-io/dukpt/pkg"
 )

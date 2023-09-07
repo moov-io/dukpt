@@ -121,7 +121,7 @@ func TestAES128(t *testing.T) {
 	require.Equal(t, expectedIK, ik)
 
 	// Advance to first KSN
-	ksn, err := pkg.GetAesNextKsn(append(initialKeyID, make([]byte, 4)...))
+	ksn, err := pkg.GenerateNextKsn(append(initialKeyID, make([]byte, 4)...))
 	require.NoError(t, err)
 
 	for index, item := range InitialSequence {
@@ -177,7 +177,7 @@ func TestAES128(t *testing.T) {
 			require.Equal(t, macData, decData[:len(macData)])
 
 			// next KSN
-			ksn, err = pkg.GetAesNextKsn(ksn)
+			ksn, err = pkg.GenerateNextKsn(ksn)
 			require.NoError(t, err)
 		})
 	}

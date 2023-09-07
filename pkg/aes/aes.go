@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
+
 	"github.com/chmike/cmac-go"
 	"github.com/moov-io/dukpt/encryption"
 	"github.com/moov-io/dukpt/pkg"
