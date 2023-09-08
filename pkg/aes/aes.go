@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
+	"fmt"
 
 	"github.com/chmike/cmac-go"
 	"github.com/moov-io/dukpt/encryption"
@@ -29,7 +30,7 @@ const (
 //   - ANSI X9.24-3-2017 6.3.3 “Create Derivation Data” (Local Subroutine)
 //
 // Params:
-//   - bdk is base derivative key (lenth will change by encription algorithm)
+//   - bdk is base derivative key (lenth will change by encryption algorithm)
 //   - kid is 8 bytes initial key id
 //
 // Return Params:
@@ -336,6 +337,9 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 	ciphertext := make([]byte, len(serializePlaintext))
 
 	block, err := aes.NewCipher(dataKey)
+	if err != nil {
+		return nil, fmt.Errorf("making cipher from datakey: %w", err)
+	}
 
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, serializePlaintext)
@@ -401,6 +405,9 @@ func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string)
 	plaintext := make([]byte, len(serializePlaintext))
 
 	block, err := aes.NewCipher(dataKey)
+	if err != nil {
+		return "", fmt.Errorf("making cipher from datakey: %w", err)
+	}
 
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(plaintext, serializePlaintext)

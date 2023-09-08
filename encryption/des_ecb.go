@@ -2,7 +2,7 @@ package encryption
 
 import (
 	"crypto/cipher"
-	"crypto/des"
+	"crypto/des" //nolint:gosec
 	"errors"
 	"fmt"
 	"strconv"
@@ -22,13 +22,11 @@ func NewTripleDesECB(key []byte) (*DesECB, error) {
 	case 16:
 		tripleDESKey = append(tripleDESKey, key[:16]...)
 		tripleDESKey = append(tripleDESKey, key[:8]...)
-		break
 	case 24:
 		tripleDESKey = append(tripleDESKey, key...)
-		break
 	}
 
-	cp, err := des.NewTripleDESCipher(tripleDESKey)
+	cp, err := des.NewTripleDESCipher(tripleDESKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}
@@ -39,7 +37,7 @@ func NewTripleDesECB(key []byte) (*DesECB, error) {
 }
 
 func NewDesECB(key []byte) (*DesECB, error) {
-	cp, err := des.NewCipher(key)
+	cp, err := des.NewCipher(key) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
 	}

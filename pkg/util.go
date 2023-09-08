@@ -80,11 +80,7 @@ func IsValidAesKsn(ksn []byte) bool {
 		tmp &= tmp - 1
 	}
 
-	if bitCount > 16 {
-		return false
-	}
-
-	return true
+	return bitCount <= 16
 }
 
 const (

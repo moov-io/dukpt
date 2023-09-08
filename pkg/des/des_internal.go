@@ -2,7 +2,7 @@ package des
 
 import (
 	"bytes"
-	"crypto/des"
+	"crypto/des" //nolint:gosec
 	"fmt"
 	"math/big"
 
@@ -80,11 +80,7 @@ func isValidTransactionCounter(ksn []byte) bool {
 	}
 
 	// Transaction counter should have 10 or fewer "one" bits
-	if bitCount > 10 {
-		return false
-	}
-
-	return true
+	return bitCount <= 10
 }
 
 // Non-reversible Key Generation Process
@@ -113,6 +109,8 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 		cryptoReg2[index] = cryptoReg2[index] ^ keyBytes[index+8]
 	}
 
+	// See https://github.com/Abirdcfly/dupword/issues/26 for a fix to needing nolint
+	//nolint:dupword
 	// 4) XOR the Key Register with hexadecimal C0C0 C0C0 0000 0000 C0C0 C0C0 0000 0000
 	serializeKeyWithHexadecimal(keyBytes)
 
