@@ -97,7 +97,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	copy(cryptoReg1, ksnBytes[len(ksnBytes)-des.BlockSize:])
 
 	// 1) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-2
-	for index, _ := range cryptoReg2 {
+	for index := range cryptoReg2 {
 		cryptoReg2[index] = cryptoReg1[index] ^ keyBytes[index+8]
 	}
 
@@ -109,7 +109,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	}
 
 	// 3) Crypto Register-2 XORed with the right half of the Key Register goes to Crypto Register-2
-	for index, _ := range cryptoReg2 {
+	for index := range cryptoReg2 {
 		cryptoReg2[index] = cryptoReg2[index] ^ keyBytes[index+8]
 	}
 
@@ -117,7 +117,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	serializeKeyWithHexadecimal(keyBytes)
 
 	// 5) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
-	for index, _ := range cryptoReg1 {
+	for index := range cryptoReg1 {
 		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
 	}
 
@@ -129,7 +129,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	}
 
 	// 7) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
-	for index, _ := range cryptoReg1 {
+	for index := range cryptoReg1 {
 		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
 	}
 

@@ -227,7 +227,7 @@ func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 	leftCipher, _ := encryption.NewDesECB(leftKey)
 	for partNum := 0; partNum < repeatCnt; partNum++ {
 		macPart := plainTextBytes[partNum*desBlockLen : (partNum+1)*desBlockLen]
-		for in, _ := range initialVector {
+		for in := range initialVector {
 			initialVector[in] = initialVector[in] ^ macPart[in]
 		}
 		initialVector, err = leftCipher.Encrypt(initialVector)
