@@ -56,11 +56,8 @@ const (
 )
 
 const (
-	keyTDES2Type   = "TDES2"
-	keyTDES3Type   = "TDES3"
-	keyHMAC128Type = "HMAC128"
-	keyHMAC192Type = "HMAC192"
-	keyHMAC256Type = "HMAC256"
+	keyTDES2Type = "TDES2"
+	keyTDES3Type = "TDES3"
 )
 
 // Key Derivation Data
@@ -170,13 +167,13 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 	case KeyAES256Type:
 		data.AlgorithmIndicator = algorithmAES256
 		data.Length = keyAES256Bits
-	case keyHMAC128Type:
+	case KeyHMAC128Type:
 		data.AlgorithmIndicator = algorithmHMAC
 		data.Length = keyHMAC128Bits
-	case keyHMAC192Type:
+	case KeyHMAC192Type:
 		data.AlgorithmIndicator = algorithmHMAC
 		data.Length = keyHMAC192Bits
-	case keyHMAC256Type:
+	case KeyHMAC256Type:
 		data.AlgorithmIndicator = algorithmHMAC
 		data.Length = keyHMAC256Bits
 	default:
@@ -206,11 +203,11 @@ func checkWorkingKeyLengthHmac(keyLen uint16, keyType string) error {
 
 	var workingKeyLength uint16
 	switch keyType {
-	case keyHMAC128Type:
+	case KeyHMAC128Type:
 		workingKeyLength = keyHMAC128Bits / 8
-	case keyHMAC192Type:
+	case KeyHMAC192Type:
 		workingKeyLength = keyHMAC192Bits / 8
-	case keyHMAC256Type:
+	case KeyHMAC256Type:
 		workingKeyLength = keyHMAC256Bits / 8
 	default:
 		return errors.New("unsupported key type")

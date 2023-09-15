@@ -386,6 +386,11 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 		// default null
 		iv = make([]byte, desBlockLen)
 	}
+
+	if len(iv) > desBlockLen {
+		iv = iv[:desBlockLen]
+	}
+	
 	mode := cipher.NewCBCDecrypter(dataCipher.GetBlock(), iv)
 	mode.CryptBlocks(plaintext, serializePlaintext)
 

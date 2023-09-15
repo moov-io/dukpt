@@ -18,9 +18,12 @@ ANSI X9.24-3-2017 (Retail Financial Services Symmetric Key Management)
 */
 
 const (
-	KeyAES128Type = "AES128"
-	KeyAES192Type = "AES192"
-	KeyAES256Type = "AES256"
+	KeyAES128Type  = "AES128"
+	KeyAES192Type  = "AES192"
+	KeyAES256Type  = "AES256"
+	KeyHMAC128Type = "HMAC128"
+	KeyHMAC192Type = "HMAC192"
+	KeyHMAC256Type = "HMAC256"
 )
 
 // Derive Initial Key (IK) from Base Derivative Key and Initial Key ID
@@ -363,7 +366,7 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 // Return Params:
 //   - result is transaction request data ( must be a multiple of aes block length [16])
 //   - err
-func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string) (string, error) {
+func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) (string, error) {
 	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
 		return "", err
 	}
@@ -391,8 +394,11 @@ func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string)
 		// default null
 		iv = make([]byte, aes.BlockSize)
 	}
+
 	if len(iv) < aes.BlockSize {
 		iv = append(iv, make([]byte, aes.BlockSize-len(iv))...)
+	} else if len(iv) > aes.BlockSize {
+		iv = iv[:aes.BlockSize]
 	}
 
 	repeatCnt := len(ciphertext) / aes.BlockSize

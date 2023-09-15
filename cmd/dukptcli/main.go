@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/moov-io/dukpt/pkg/server"
 	"os"
 
 	"github.com/moov-io/dukpt"
 	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/pkg/server"
 )
 
 var (
@@ -72,13 +72,13 @@ func main() {
 	}
 
 	// checking algorithm
-	if *flagAlgorithm == "aes" && *flagAlgorithmKeyType == "" {
+	if *flagAlgorithm == pkg.AlgorithmAes && *flagAlgorithmKeyType == "" {
 		fmt.Printf("please select key type with algorithm.key_type flag\n")
 		os.Exit(1)
 	}
 
 	params.Algorithm = *flagAlgorithm
-	params.AlgorithmKeyType = *flagAlgorithmKeyType
+	params.AlgorithmKey = *flagAlgorithmKeyType
 
 	// checking ik params
 	if *flagInitialKey {
@@ -131,7 +131,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagEncryptPinKSN == "" {
 				fmt.Printf("please select key serial number with ep.ksn flag\n")
 				os.Exit(1)
@@ -168,7 +168,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagDecryptPinKSN == "" {
 				fmt.Printf("please select key serial number with dp.ksn flag\n")
 				os.Exit(1)
@@ -205,12 +205,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagGenerateMacKSN == "" {
 				fmt.Printf("please select key serial number with gm.ksn flag\n")
 				os.Exit(1)
 			}
-			if *flagGenerateMacType != "cmac" && *flagGenerateMacType != "hmac" {
+			if *flagGenerateMacType != pkg.MaxTypeCmac && *flagGenerateMacType != pkg.MaxTypeHmac {
 				fmt.Printf("please select valid mac type with gm.type flag\n")
 				os.Exit(1)
 			}
@@ -241,7 +241,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagEncryptKSN == "" {
 				fmt.Printf("please select key serial number with en.ksn flag\n")
 				os.Exit(1)
@@ -273,7 +273,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagDecryptKSN == "" {
 				fmt.Printf("please select key serial number with de.ksn flag\n")
 				os.Exit(1)

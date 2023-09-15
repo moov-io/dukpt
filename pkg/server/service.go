@@ -3,7 +3,9 @@ package server
 import (
 	"errors"
 	"fmt"
+
 	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/pkg/aes"
 )
 
 var (
@@ -44,10 +46,10 @@ func (s *service) CreateMachine(m *Machine) error {
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		KSN:              m.KeySerialNumber,
-		BKD:              m.BaseDerivativeKey,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		KSN:          m.KeySerialNumber,
+		BKD:          m.BaseDerivativeKey,
 	}
 
 	if err := params.ValidateAlgorithm(); err != nil {
@@ -96,7 +98,7 @@ func (s *service) MakeNextKSN(ik string) (*Machine, error) {
 	}
 
 	var nextKsn []byte
-	if m.Algorithm == "aes" {
+	if m.Algorithm == pkg.AlgorithmAes {
 		nextKsn, err = pkg.GenerateNextAesKsn(pkg.HexDecode(m.CurrentKSN))
 		if err != nil {
 			return nil, err
@@ -112,10 +114,10 @@ func (s *service) MakeNextKSN(ik string) (*Machine, error) {
 	m.CurrentKSN = pkg.HexEncode(nextKsn)
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
 	}
 	m.TransactionKey, err = TransactionKey(params)
 	if err != nil {
@@ -136,14 +138,14 @@ func (s *service) EncryptPin(ik, pin, pan, format string) (string, error) {
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		TK:               m.TransactionKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
-		Format:           format,
-		PIN:              pin,
-		PAN:              pan,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		TK:           m.TransactionKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
+		Format:       format,
+		PIN:          pin,
+		PAN:          pan,
 	}
 
 	if params.Format == "" {
@@ -160,21 +162,21 @@ func (s *service) DecryptPin(ik, ciphertext, pan, format string) (string, error)
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		TK:               m.TransactionKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
-		Format:           format,
-		PIN:              ciphertext,
-		PAN:              pan,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		TK:           m.TransactionKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
+		Format:       format,
+		PIN:          ciphertext,
+		PAN:          pan,
 	}
 
 	if params.Format == "" {
 		params.Format = "ISO-0"
 	}
 
-	return EncryptPin(params)
+	return DecryptPin(params)
 }
 
 func (s *service) GenerateMac(ik, data, action, macType string) (string, error) {
@@ -184,14 +186,27 @@ func (s *service) GenerateMac(ik, data, action, macType string) (string, error) 
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		TK:               m.TransactionKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
-		Plaintext:        data,
-		Action:           action,
-		MacType:          macType,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		TK:           m.TransactionKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
+		Plaintext:    data,
+		Action:       action,
+		MacType:      macType,
+	}
+
+	// workaround for hmac
+	if macType == pkg.MaxTypeHmac && m.Algorithm == pkg.AlgorithmAes {
+		if m.AlgorithmKey == aes.KeyAES128Type {
+			params.AlgorithmKey = aes.KeyHMAC128Type
+		}
+		if m.AlgorithmKey == aes.KeyAES192Type {
+			params.AlgorithmKey = aes.KeyHMAC192Type
+		}
+		if m.AlgorithmKey == aes.KeyAES256Type {
+			params.AlgorithmKey = aes.KeyHMAC256Type
+		}
 	}
 
 	return GenerateMac(params)
@@ -204,14 +219,14 @@ func (s *service) EncryptData(ik, data, action, iv string) (string, error) {
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		TK:               m.TransactionKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
-		Plaintext:        data,
-		Action:           action,
-		IV:               iv,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		TK:           m.TransactionKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
+		Plaintext:    data,
+		Action:       action,
+		IV:           iv,
 	}
 
 	return EncryptData(params)
@@ -224,14 +239,14 @@ func (s *service) DecryptData(ik, ciphertext, action, iv string) (string, error)
 	}
 
 	params := UnifiedParams{
-		Algorithm:        m.Algorithm,
-		AlgorithmKeyType: m.AlgorithmKey,
-		TK:               m.TransactionKey,
-		KSN:              m.CurrentKSN,
-		IK:               ik,
-		Ciphertext:       ciphertext,
-		Action:           action,
-		IV:               iv,
+		Algorithm:    m.Algorithm,
+		AlgorithmKey: m.AlgorithmKey,
+		TK:           m.TransactionKey,
+		KSN:          m.CurrentKSN,
+		IK:           ik,
+		Ciphertext:   ciphertext,
+		Action:       action,
+		IV:           iv,
 	}
 
 	return DecryptData(params)

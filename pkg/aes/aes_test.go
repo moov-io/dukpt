@@ -162,7 +162,7 @@ func TestAES128(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, item.DataRequest, strings.ToUpper(pkg.HexEncode(encData)))
 
-			decData, err := DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, pkg.ActionRequest)
+			decData, err := DecryptData(transactionKey, ksn, encData, nil, KeyAES128Type, pkg.ActionRequest)
 			require.NoError(t, err)
 			require.Len(t, decData, 32)
 			require.Equal(t, macData, decData[:len(macData)])
@@ -171,7 +171,7 @@ func TestAES128(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, item.DataResponse, strings.ToUpper(pkg.HexEncode(encData)))
 
-			decData, err = DecryptData(transactionKey, ksn, nil, encData, KeyAES128Type, pkg.ActionResponse)
+			decData, err = DecryptData(transactionKey, ksn, encData, nil, KeyAES128Type, pkg.ActionResponse)
 			require.NoError(t, err)
 			require.Len(t, decData, 32)
 			require.Equal(t, macData, decData[:len(macData)])

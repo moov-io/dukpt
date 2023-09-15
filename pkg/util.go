@@ -6,9 +6,19 @@ import (
 	"errors"
 )
 
-func HexDecode(data string) []byte {
-	out := make([]byte, hex.DecodedLen(len(data)))
+const (
+	AlgorithmDes = "des"
+	AlgorithmAes = "aes"
+	MaxTypeCmac  = "cmac"
+	MaxTypeHmac  = "hmac"
+)
 
+func HexDecode(data string) []byte {
+	if len(data) == 0 {
+		return nil
+	}
+
+	out := make([]byte, hex.DecodedLen(len(data)))
 	_, err := hex.Decode(out, []byte(data))
 	if err != nil {
 		return nil
@@ -18,8 +28,11 @@ func HexDecode(data string) []byte {
 }
 
 func HexEncode(data []byte) string {
-	out := make([]byte, hex.EncodedLen(len(data)))
+	if len(data) == 0 {
+		return ""
+	}
 
+	out := make([]byte, hex.EncodedLen(len(data)))
 	hex.Encode(out, data)
 	return string(out)
 }
