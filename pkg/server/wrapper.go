@@ -1,21 +1,18 @@
-package main
+package server
 
 import (
 	"errors"
-	"fmt"
-	"os"
 
 	"github.com/moov-io/dukpt/pkg"
 	"github.com/moov-io/dukpt/pkg/aes"
 	"github.com/moov-io/dukpt/pkg/des"
 )
 
-type cliParams struct {
+type UnifiedParams struct {
 	Algorithm        string
 	AlgorithmKeyType string
 	BKD              string
 	KSN              string
-	KID              string
 	IK               string
 	TK               string
 	PIN              string
@@ -28,21 +25,21 @@ type cliParams struct {
 	IV               string
 }
 
-func (p cliParams) ValidateAlgorithm() error {
+func (p UnifiedParams) ValidateAlgorithm() error {
 	if p.Algorithm != "des" && p.Algorithm != "ase" {
 		return errors.New("invalid encrypt/decrypt algorithm")
 	}
 	return nil
 }
 
-type funcInf func(params cliParams) (string, error)
+type WrapperCall func(params UnifiedParams) (string, error)
 
-func initialKey(params cliParams) (string, error) {
+func InitialKey(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
 	if params.Algorithm == "aes" {
-		buf, err = aes.DerivationOfInitialKey(pkg.HexDecode(params.BKD), pkg.HexDecode(params.KID))
+		buf, err = aes.DerivationOfInitialKey(pkg.HexDecode(params.BKD), pkg.HexDecode(params.KSN))
 
 	} else {
 		buf, err = des.DerivationOfInitialKey(pkg.HexDecode(params.BKD), pkg.HexDecode(params.KSN))
@@ -54,7 +51,7 @@ func initialKey(params cliParams) (string, error) {
 	return pkg.HexEncode(buf), nil
 }
 
-func transactionKey(params cliParams) (string, error) {
+func TransactionKey(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
@@ -70,7 +67,7 @@ func transactionKey(params cliParams) (string, error) {
 	return pkg.HexEncode(buf), nil
 }
 
-func encryptPin(params cliParams) (string, error) {
+func EncryptPin(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
@@ -86,7 +83,7 @@ func encryptPin(params cliParams) (string, error) {
 	return pkg.HexEncode(buf), nil
 }
 
-func decryptPin(params cliParams) (string, error) {
+func DecryptPin(params UnifiedParams) (string, error) {
 	var buf string
 	var err error
 
@@ -102,7 +99,7 @@ func decryptPin(params cliParams) (string, error) {
 	return buf, nil
 }
 
-func generateMac(params cliParams) (string, error) {
+func GenerateMac(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
@@ -125,7 +122,7 @@ func generateMac(params cliParams) (string, error) {
 	return pkg.HexEncode(buf), nil
 }
 
-func encryptData(params cliParams) (string, error) {
+func EncryptData(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
@@ -141,7 +138,7 @@ func encryptData(params cliParams) (string, error) {
 	return pkg.HexEncode(buf), nil
 }
 
-func decryptData(params cliParams) (string, error) {
+func DecryptData(params UnifiedParams) (string, error) {
 	var buf string
 	var err error
 
@@ -155,19 +152,4 @@ func decryptData(params cliParams) (string, error) {
 		return "", err
 	}
 	return buf, nil
-}
-
-func makeFuncCall(f funcInf, params cliParams) {
-	if err := params.ValidateAlgorithm(); err != nil {
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(2)
-	}
-
-	result, err := f(params)
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		os.Exit(2)
-	}
-
-	fmt.Printf("RESULT: %s\n", result)
 }

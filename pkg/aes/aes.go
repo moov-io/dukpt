@@ -31,18 +31,18 @@ const (
 //
 // Params:
 //   - bdk is base derivative key (lenth will change by encryption algorithm)
-//   - kid is 8 bytes initial key id
+//   - ksn is 12 bytes key serial number
 //
 // Return Params:
 //   - reulst is initial key of bdk's length
 //   - err
-func DerivationOfInitialKey(bdk, kid []byte) ([]byte, error) {
+func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	keyType, err := getDerivationKeyType(len(bdk))
 	if err != nil {
 		return nil, err
 	}
 
-	derivationData, err := createDerivationData(usageForKeyInitialKey, keyType, kid, 0)
+	derivationData, err := createDerivationData(usageForKeyInitialKey, keyType, ksn[:8], 0)
 	if err != nil {
 		return nil, err
 	}
