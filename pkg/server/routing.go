@@ -13,7 +13,6 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
-	gokitlog "github.com/go-kit/log"
 	"github.com/gorilla/mux"
 	"github.com/moov-io/base"
 	moovhttp "github.com/moov-io/base/http"
@@ -78,10 +77,9 @@ func preflightHandler(options []httptransport.ServerOption) http.Handler {
 	)
 }
 
-func MakeHTTPHandler(s Service, kitlog gokitlog.Logger) http.Handler {
+func MakeHTTPHandler(s Service) http.Handler {
 	r := mux.NewRouter()
 	options := []httptransport.ServerOption{
-		httptransport.ServerErrorLogger(kitlog),
 		httptransport.ServerErrorEncoder(encodeError),
 		httptransport.ServerBefore(saveCORSHeadersIntoContext()),
 		httptransport.ServerAfter(respondWithSavedCORSHeaders()),
