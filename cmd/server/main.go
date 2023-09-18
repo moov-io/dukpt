@@ -52,7 +52,7 @@ func main() {
 	svc = server.NewService(r)
 
 	// Create HTTP server
-	handler = server.MakeHTTPHandler(svc, kitlog.With(kitlogger, "component", "HTTP"))
+	handler = server.MakeHTTPHandler(svc)
 
 	// Listen for application termination.
 	errs := make(chan error)
