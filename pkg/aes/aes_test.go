@@ -150,11 +150,11 @@ func TestAES128(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, item.CMACResponse, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, pkg.ActionRequest)
+			genMac, err = GenerateHMAC(transactionKey, ksn, macData, KeyHMAC128Type, pkg.ActionRequest)
 			require.NoError(t, err)
 			require.Equal(t, item.HMACRequest, strings.ToUpper(pkg.HexEncode(genMac)))
 
-			genMac, err = GenerateHMAC(transactionKey, ksn, macData, keyHMAC128Type, pkg.ActionResponse)
+			genMac, err = GenerateHMAC(transactionKey, ksn, macData, KeyHMAC128Type, pkg.ActionResponse)
 			require.NoError(t, err)
 			require.Equal(t, item.HMACResponse, strings.ToUpper(pkg.HexEncode(genMac)))
 
