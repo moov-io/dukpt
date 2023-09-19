@@ -3,7 +3,6 @@ package server
 import (
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/moov-io/base/log"
 )
@@ -19,10 +18,7 @@ type Repository interface {
 type repositoryInMemory struct {
 	mtx      sync.RWMutex
 	machines map[string]*Machine
-
-	ttl time.Duration
-
-	logger log.Logger
+	logger   log.Logger
 }
 
 // NewRepositoryInMemory is an in memory ach storage repository for machines

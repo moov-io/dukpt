@@ -64,9 +64,7 @@ func decodeFindMachineRequest(_ context.Context, request *http.Request) (interfa
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
-
+	req.ik = mux.Vars(request)["ik"]
 	return req, nil
 }
 
@@ -150,9 +148,7 @@ func decodeGenerateKSNRequest(_ context.Context, request *http.Request) (interfa
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
-
+	req.ik = mux.Vars(request)["ik"]
 	return req, nil
 }
 
@@ -193,8 +189,7 @@ func decodeEncryptPinRequest(_ context.Context, request *http.Request) (interfac
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
+	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
 		Pin    string
@@ -251,8 +246,7 @@ func decodeDecryptPinRequest(_ context.Context, request *http.Request) (interfac
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
+	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
 		Encrypted string
@@ -309,8 +303,7 @@ func decodeGenerateMacRequest(_ context.Context, request *http.Request) (interfa
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
+	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
 		Action  string
@@ -367,8 +360,7 @@ func decodeEncryptDataRequest(_ context.Context, request *http.Request) (interfa
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
+	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
 		Action string
@@ -425,8 +417,7 @@ func decodeDecryptDataRequest(_ context.Context, request *http.Request) (interfa
 		requestID: moovhttp.GetRequestID(request),
 	}
 
-	ik, _ := mux.Vars(request)["ik"]
-	req.ik = ik
+	req.ik = mux.Vars(request)["ik"]
 
 	type requestParam struct {
 		Action string

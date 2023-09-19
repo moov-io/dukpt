@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"crypto/des" //nolint:gosec
 	"fmt"
-	"math/big"
-
 	"github.com/moov-io/dukpt/encryption"
 )
 
@@ -55,32 +53,6 @@ func serializeKeyWithHexadecimal(key []byte) {
 	key[9] ^= 0xC0
 	key[10] ^= 0xC0
 	key[11] ^= 0xC0
-}
-
-// Extract transaction counter value from KSN. The transaction counter is the last 21 bits of the KSN.
-func getTransactionCounter(ksn []byte) (int64, error) {
-	if len(ksn) != keySerialLen {
-		return 0, fmt.Errorf("invalid key length")
-	}
-
-	lastBytes := ksn[keyLen-3:]
-	lastBytes[0] = lastBytes[0] & 0x1f
-	return int64(big.NewInt(0).SetBytes(lastBytes).Uint64()), nil
-}
-
-func isValidTransactionCounter(ksn []byte) bool {
-	tc, err := getTransactionCounter(ksn)
-	if err != nil {
-		return false
-	}
-
-	bitCount := 0
-	for v := tc; v != 0; bitCount++ {
-		v &= v - 1
-	}
-
-	// Transaction counter should have 10 or fewer "one" bits
-	return bitCount <= 10
 }
 
 // Non-reversible Key Generation Process

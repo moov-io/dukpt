@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -215,24 +214,10 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		w.Header().Set("X-Total-Count", strconv.Itoa(e.count()))
 	}
 
-	// Don't overwrite a header (i.e. called from encodeTextResponse)
 	if v := w.Header().Get("Content-Type"); v == "" {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		// Only write json body if we're setting response as json
 		return json.NewEncoder(w).Encode(response)
-	}
-	return nil
-}
-
-// encodeTextResponse will marshal response into the HTTP Response
-// This method is designed text/plain content-types and expects response
-// to be an io.Reader.
-func encodeTextResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if r, ok := response.(io.Reader); ok {
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		_, err := io.Copy(w, r)
-		return err
 	}
 	return nil
 }
