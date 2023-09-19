@@ -78,7 +78,7 @@ Moov dukpt project supported general utility functions for managing transaction 
 
 - Utility function that used to get next key serial number 
 ```
-    GenerateNextKsn(ksn []byte) ([]byte, error)
+    GenerateNextAesKsn(ksn []byte) ([]byte, error)
 ```
 
 ### How to

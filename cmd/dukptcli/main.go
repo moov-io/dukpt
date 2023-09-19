@@ -7,6 +7,7 @@ import (
 
 	"github.com/moov-io/dukpt"
 	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/pkg/server"
 )
 
 var (
@@ -18,7 +19,6 @@ var (
 	flagInitialKey    = flag.Bool("ik", false, "derive initial key from base derivative key and key serial number (or initial key id)")
 	flagInitialKeyBKD = flag.String("ik.bdk", "", "base derivative key")
 	flagInitialKeyKSN = flag.String("ik.ksn", "", "key serial number")
-	flagInitialKeyKID = flag.String("ik.kid", "", "initial key id")
 
 	flagTransactionKey    = flag.Bool("tk", false, "derive transaction key (current transaction key) from initial key and key serial number")
 	flagTransactionKeyIK  = flag.String("tk.ik", "", "initial key")
@@ -63,7 +63,7 @@ var (
 func main() {
 	flag.Usage = help
 	flag.Parse()
-	params := cliParams{}
+	params := server.UnifiedParams{}
 
 	switch {
 	case *flagVersion:
@@ -72,13 +72,13 @@ func main() {
 	}
 
 	// checking algorithm
-	if *flagAlgorithm == "aes" && *flagAlgorithmKeyType == "" {
+	if *flagAlgorithm == pkg.AlgorithmAes && *flagAlgorithmKeyType == "" {
 		fmt.Printf("please select key type with algorithm.key_type flag\n")
 		os.Exit(1)
 	}
 
 	params.Algorithm = *flagAlgorithm
-	params.AlgorithmKeyType = *flagAlgorithmKeyType
+	params.AlgorithmKey = *flagAlgorithmKeyType
 
 	// checking ik params
 	if *flagInitialKey {
@@ -86,20 +86,15 @@ func main() {
 			fmt.Printf("please select base derivative key with ik.bdk flag\n")
 			os.Exit(1)
 		}
-		if *flagAlgorithm == "aes" && *flagInitialKeyKID == "" {
-			fmt.Printf("please select initial key id with ik.kid flag\n")
-			os.Exit(1)
-		}
-		if *flagAlgorithm == "des" && *flagInitialKeyKSN == "" {
+		if *flagInitialKeyKSN == "" {
 			fmt.Printf("please select key serial number with ik.ksn flag\n")
 			os.Exit(1)
 		}
 
 		params.BKD = *flagInitialKeyBKD
-		params.KID = *flagInitialKeyKID
 		params.KSN = *flagInitialKeyKSN
 
-		makeFuncCall(initialKey, params)
+		makeFuncCall(server.InitialKey, params)
 		return
 	}
 
@@ -117,7 +112,7 @@ func main() {
 		params.IK = *flagTransactionKeyIK
 		params.KSN = *flagTransactionKeyKSN
 
-		makeFuncCall(transactionKey, params)
+		makeFuncCall(server.TransactionKey, params)
 		return
 	}
 
@@ -136,7 +131,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagEncryptPinKSN == "" {
 				fmt.Printf("please select key serial number with ep.ksn flag\n")
 				os.Exit(1)
@@ -154,7 +149,7 @@ func main() {
 		params.KSN = *flagEncryptPinKSN
 		params.Format = *flagEncryptPinFormat
 
-		makeFuncCall(encryptPin, params)
+		makeFuncCall(server.EncryptPin, params)
 		return
 	}
 
@@ -173,7 +168,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagDecryptPinKSN == "" {
 				fmt.Printf("please select key serial number with dp.ksn flag\n")
 				os.Exit(1)
@@ -191,7 +186,7 @@ func main() {
 		params.KSN = *flagDecryptPinKSN
 		params.Format = *flagDecryptPinFormat
 
-		makeFuncCall(decryptPin, params)
+		makeFuncCall(server.DecryptPin, params)
 		return
 	}
 
@@ -210,12 +205,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagGenerateMacKSN == "" {
 				fmt.Printf("please select key serial number with gm.ksn flag\n")
 				os.Exit(1)
 			}
-			if *flagGenerateMacType != "cmac" && *flagGenerateMacType != "hmac" {
+			if *flagGenerateMacType != pkg.MaxTypeCmac && *flagGenerateMacType != pkg.MaxTypeHmac {
 				fmt.Printf("please select valid mac type with gm.type flag\n")
 				os.Exit(1)
 			}
@@ -227,7 +222,7 @@ func main() {
 		params.MacType = *flagGenerateMacType
 		params.KSN = *flagGenerateMacKSN
 
-		makeFuncCall(generateMac, params)
+		makeFuncCall(server.GenerateMac, params)
 		return
 	}
 
@@ -246,7 +241,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagEncryptKSN == "" {
 				fmt.Printf("please select key serial number with en.ksn flag\n")
 				os.Exit(1)
@@ -259,7 +254,7 @@ func main() {
 		params.KSN = *flagEncryptKSN
 		params.Action = *flagEncryptAction
 
-		makeFuncCall(encryptData, params)
+		makeFuncCall(server.EncryptData, params)
 		return
 	}
 
@@ -278,7 +273,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		if *flagAlgorithm == "aes" {
+		if *flagAlgorithm == pkg.AlgorithmAes {
 			if *flagDecryptKSN == "" {
 				fmt.Printf("please select key serial number with de.ksn flag\n")
 				os.Exit(1)
@@ -291,10 +286,25 @@ func main() {
 		params.KSN = *flagDecryptKSN
 		params.Action = *flagDecryptAction
 
-		makeFuncCall(decryptData, params)
+		makeFuncCall(server.DecryptData, params)
 		return
 	}
 
 	flag.Usage()
 	os.Exit(1)
+}
+
+func makeFuncCall(f server.WrapperCall, params server.UnifiedParams) {
+	if err := params.ValidateAlgorithm(); err != nil {
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(2)
+	}
+
+	result, err := f(params)
+	if err != nil {
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(2)
+	}
+
+	fmt.Printf("RESULT: %s\n", result)
 }
