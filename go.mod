@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/chmike/cmac-go v1.1.0
-	github.com/go-kit/kit v0.12.0
+	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.0
 	github.com/moov-io/base v0.46.0
