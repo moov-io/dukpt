@@ -24,8 +24,8 @@ This project implements the ANSI X9.24-3:2017 standard for TDES and AES Derived 
     - [DUPKT apis](#dupkt-apis)
     - [How to](#how-to)
     - [Command lines](#command-lines)
-- [ISO8583 CLI](#cli)
-- [Learn about ISO 8583](#learn-about-iso-8583)
+    - [Service Instance](#service-instance)
+    - [Rest APIs](#rest-apis)
 - [Supported and tested platforms](#supported-and-tested-platforms)
 - [Contributing](#contributing)
 - [Releasing](#releasing)
@@ -261,6 +261,53 @@ Example:
     RESULT: 6ac292faa1315b4d858ab3a3d7d5933a
 ```
 In above example, the execution is to derive initial key with specified algorithm although set two execution flags
+
+### Service instance
+DUKPT library provided service instance that support multi dukpt encrypt machines. 
+```
+type Service interface {
+	CreateMachine(m *Machine) error
+	GetMachine(ik string) (*Machine, error)
+	GetMachines() []*Machine
+	MakeNextKSN(ik string) (*Machine, error)
+	DeleteMachine(ik string) error
+	EncryptPin(ik, pin, pan, format string) (string, error)
+	DecryptPin(ik, ciphertext, pan, format string) (string, error)
+	GenerateMac(ik, data, action, macType string) (string, error)
+	EncryptData(ik, data, action, iv string) (string, error)
+	DecryptData(ik, ciphertext, action, iv string) (string, error)
+}
+```
+
+User can use the service instance using special logger
+```
+	logger := log.NewLogger(kitlogger)
+	logger.Logf("Starting dukpt server version %s", dukpt.Version)
+
+	// Setup underlying dukpt service
+	r := server.NewRepositoryInMemory(logger)
+	svc = server.NewService(r)
+```
+
+### Rest APIs
+DUKPT library provided web server. Please check following http endpoints
+
+| Method | Request Body | Route              | Action         |
+|--------|--------------|--------------------|----------------|
+| GET    |              | /machines          | Get Machines   |
+| GET    |              | /machine/{ik}      | Get Machine    |
+| POST   |              | /machine           | Create Machine |
+| POST   | JSON         | /generate_ksn/{ik} | Generate KSN   |
+| POST   | JSON         | /encrypt_pin/{ik}  | Encrypt PIN    | 
+| POST   | JSON         | /decrypt_pin/{ik}  | Decrypt Pin    |
+| POST   | JSON         | /generate_mac/{ik} | Generate Mac   |
+| POST   | JSON         | /encrypt_data/{ik} | Encrypt Data   |
+| POST   | JSON         | /decrypt_data/{ik} | Decrypt Data   |
+
+User can create web service using following http handler 
+```
+	handler = server.MakeHTTPHandler(svc)
+```
 
 ## Supported and tested platforms
 

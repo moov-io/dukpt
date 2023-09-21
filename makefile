@@ -1,6 +1,5 @@
-.PHONY: setup
-setup:
-	docker-compose up -d --force-recreate --remove-orphans
+PLATFORM=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+VERSION := $(shell grep -Eo '(v[0-9]+[\.][0-9]+[\.][0-9]+(-[a-zA-Z0-9]*)?)' version.go)
 
 .PHONY: check
 check:
@@ -10,6 +9,13 @@ else
 	@wget -O lint-project.sh https://raw.githubusercontent.com/moov-io/infra/master/go/lint-project.sh
 	@chmod +x ./lint-project.sh
 	COVER_THRESHOLD=50.0 DISABLE_GITLEAKS=true ./lint-project.sh
+endif
+
+dist: clean
+ifeq ($(OS),Windows_NT)
+	CGO_ENABLED=1 GOOS=windows go build -o bin/dukptcli.exe github.com/moov-io/dukpt/cmd/dukptcli
+else
+	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/dukptcli-$(PLATFORM)-amd64 github.com/moov-io/dukpt/cmd/dukptcli
 endif
 
 .PHONY: clean
