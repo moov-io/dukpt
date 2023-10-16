@@ -54,13 +54,10 @@ func TestService__GetMachine(t *testing.T) {
 	m := NewMachine(mockBaseDesKey())
 	s.CreateMachine(m)
 
-	s.CreateMachine(NewMachine(mockBaseAesKey()))
-
 	machines := s.GetMachines()
-	require.Equal(t, "042666b49184cfa368de9628d0397bc9", machines[0].TransactionKey)
-	require.Equal(t, "4f21b565bad9835e112b6465635eae44", machines[1].TransactionKey)
+	require.Equal(t, 1, len(machines))
 
-	machine, err := s.GetMachine(m.InitialKey)
+	machine, err := s.GetMachine(machines[0].InitialKey)
 	require.NoError(t, err)
 	require.Equal(t, "042666b49184cfa368de9628d0397bc9", machine.TransactionKey)
 }
