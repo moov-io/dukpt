@@ -3,3 +3,4 @@ pkg/aes/aes_test.go:generic-api-key:36
 pkg/aes/aes_test.go:generic-api-key:76
 pkg/aes/aes_test.go:generic-api-key:86
 pkg/aes/aes_test.go:generic-api-key:96
+pkg/server/service_test.go:generic-api-key:20
