@@ -1,6 +1,6 @@
 module github.com/moov-io/dukpt
 
-go 1.20
+go 1.22.2
 
 require (
 	github.com/chmike/cmac-go v1.1.0
@@ -8,7 +8,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/moov-io/base v0.48.5
-	github.com/moov-io/pinblock v0.0.0-20240304151034-1b0097409250
+	github.com/moov-io/pinblock v0.0.0-20240425135420-6c52755574a1
 	github.com/stretchr/testify v1.9.0
 )
 
