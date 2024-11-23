@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/moov-io/base v0.53.0
 	github.com/moov-io/pinblock v0.0.0-20240830153717-1ecbffa29fbd
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 )
 
 require (
