@@ -8,7 +8,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/moov-io/base v0.53.0
-	github.com/moov-io/pinblock v0.0.0-20240830153717-1ecbffa29fbd
+	github.com/moov-io/pinblock v0.0.0-20241211163540-59484be0a633
 	github.com/stretchr/testify v1.10.0
 )
 
