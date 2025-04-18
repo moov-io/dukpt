@@ -193,7 +193,7 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 	return &data, nil
 }
 
-func checkWorkingKeyLengthHmac(keyLen uint16, keyType string) error {
+func checkWorkingKeyLengthHmac(keyLen int, keyType string) error {
 	// Validate transaction/intermediate key length
 	if keyLen != keyHMAC128Bits/8 &&
 		keyLen != keyHMAC192Bits/8 &&
@@ -201,7 +201,7 @@ func checkWorkingKeyLengthHmac(keyLen uint16, keyType string) error {
 		return errors.New("invalid current transaction key length")
 	}
 
-	var workingKeyLength uint16
+	var workingKeyLength int
 	switch keyType {
 	case KeyHMAC128Type:
 		workingKeyLength = keyHMAC128Bits / 8
@@ -220,7 +220,7 @@ func checkWorkingKeyLengthHmac(keyLen uint16, keyType string) error {
 	return nil
 }
 
-func checkWorkingKeyLength(keyLen uint16, keyType string) error {
+func checkWorkingKeyLength(keyLen int, keyType string) error {
 	// Validate transaction/intermediate key length
 	if keyLen != keyAES128Bits/8 &&
 		keyLen != keyAES192Bits/8 &&
@@ -228,7 +228,7 @@ func checkWorkingKeyLength(keyLen uint16, keyType string) error {
 		return errors.New("invalid current transaction key length")
 	}
 
-	var workingKeyLength uint16
+	var workingKeyLength int
 	switch keyType {
 	case KeyAES128Type:
 		workingKeyLength = keyAES128Bits / 8

@@ -115,7 +115,7 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 //   - result is cipher text
 //   - err
 func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte, error) {
-	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
 
@@ -160,7 +160,7 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 //   - result is plain text
 //   - err
 func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) (string, error) {
-	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return "", err
 	}
 
@@ -204,7 +204,7 @@ func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) 
 //   - result is 16bytes generated cmac
 //   - err
 func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error) {
-	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
 
@@ -253,7 +253,7 @@ func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 //   - result is 16bytes generated cmac
 //   - err
 func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error) {
-	if err := checkWorkingKeyLengthHmac(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLengthHmac(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
 
@@ -299,7 +299,7 @@ func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 //   - result is encrypted data
 //   - err
 func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) ([]byte, error) {
-	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
 
@@ -367,7 +367,7 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 //   - result is transaction request data ( must be a multiple of aes block length [16])
 //   - err
 func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) (string, error) {
-	if err := checkWorkingKeyLength(uint16(len(currentKey)), keyType); err != nil {
+	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return "", err
 	}
 
