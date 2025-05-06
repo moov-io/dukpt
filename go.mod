@@ -2,14 +2,14 @@ module github.com/moov-io/dukpt
 
 go 1.23.0
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 require (
 	github.com/chmike/cmac-go v1.1.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
-	github.com/moov-io/base v0.54.4
+	github.com/moov-io/base v0.55.0
 	github.com/moov-io/pinblock v0.0.0-20241211163540-59484be0a633
 	github.com/stretchr/testify v1.10.0
 )
