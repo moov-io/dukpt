@@ -2,7 +2,7 @@ module github.com/moov-io/dukpt
 
 go 1.23.0
 
-toolchain go1.24.3
+toolchain go1.24.4
 
 require (
 	github.com/chmike/cmac-go v1.1.0
