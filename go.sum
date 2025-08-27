@@ -46,6 +46,8 @@ github.com/moov-io/pinblock v0.0.0-20241211163540-59484be0a633 h1:R9piZcu41I/xiC
 github.com/moov-io/pinblock v0.0.0-20241211163540-59484be0a633/go.mod h1:9Mel37Egw3MLaQvkx9AZdajpcSTdoXEjSl0YebRLrUQ=
 github.com/moov-io/pinblock v0.0.0-20250824220334-448a580463b9 h1:DFLVwkFSJSRREBH2i5eFoWBlFUfnFN42Z50BnrK3vlM=
 github.com/moov-io/pinblock v0.0.0-20250824220334-448a580463b9/go.mod h1:aXzQyM1nF0RN+/izswCX+y11SAq7YyGcn9zOe3OiUYQ=
+github.com/moov-io/pinblock v0.0.0-20250827192605-96cec2be4321 h1:dFQ4tEsbMEt/dl/xvRjUapoNXzehp0yhxszYKYPQe2E=
+github.com/moov-io/pinblock v0.0.0-20250827192605-96cec2be4321/go.mod h1:viNK99G+az/wXN8D/9vYAOK6SXf80b/PeYDjPQV61WE=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
@@ -70,6 +72,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/stretchr/testify v1.11.0 h1:ib4sjIrwZKxE5u/Japgo/7SJV3PvgjGiRNAvTVGqQl8=
 github.com/stretchr/testify v1.11.0/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 golang.org/x/sys v0.31.0 h1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=
 golang.org/x/sys v0.31.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=
 golang.org/x/sys v0.32.0 h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
