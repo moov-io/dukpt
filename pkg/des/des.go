@@ -319,7 +319,9 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 		iv = append(iv, make([]byte, desBlockLen-len(iv))...)
 	}
 
+	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode := cipher.NewCBCEncrypter(dataCipher.GetBlock(), iv)
+	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode.CryptBlocks(ciphertext, serializePlaintext)
 
 	return ciphertext, nil
@@ -391,7 +393,9 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 		iv = iv[:desBlockLen]
 	}
 
+	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode := cipher.NewCBCDecrypter(dataCipher.GetBlock(), iv)
+	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode.CryptBlocks(plaintext, serializePlaintext)
 
 	return string(plaintext), nil

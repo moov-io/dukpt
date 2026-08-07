@@ -2,6 +2,7 @@ package encryption
 
 import (
 	"crypto/cipher"
+	// DES/3DES are required by ANSI X9.24 DUKPT; not for general-purpose crypto.
 	"crypto/des" //nolint:gosec
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ func NewTripleDesECB(key []byte) (*DesECB, error) {
 		tripleDESKey = append(tripleDESKey, key...)
 	}
 
+	// codeql[go/weak-cryptographic-algorithm] DES/3DES required by ANSI X9.24 DUKPT
 	cp, err := des.NewTripleDESCipher(tripleDESKey) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
@@ -37,6 +39,7 @@ func NewTripleDesECB(key []byte) (*DesECB, error) {
 }
 
 func NewDesECB(key []byte) (*DesECB, error) {
+	// codeql[go/weak-cryptographic-algorithm] DES required by ANSI X9.24 DUKPT
 	cp, err := des.NewCipher(key) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("creating cipher: %w", err)
@@ -53,6 +56,7 @@ func (a *DesECB) Encrypt(plainText []byte) ([]byte, error) {
 	}
 
 	cipherText := make([]byte, len(plainText))
+	// codeql[go/weak-cryptographic-algorithm] DES/3DES required by ANSI X9.24 DUKPT
 	a.cipherBlock.Encrypt(cipherText, plainText)
 	return cipherText, nil
 }
@@ -63,6 +67,7 @@ func (a *DesECB) Decrypt(cipherText []byte) ([]byte, error) {
 	}
 
 	plainText := make([]byte, len(cipherText))
+	// codeql[go/weak-cryptographic-algorithm] DES/3DES required by ANSI X9.24 DUKPT
 	a.cipherBlock.Decrypt(plainText, cipherText)
 	return plainText, nil
 }
