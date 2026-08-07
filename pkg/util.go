@@ -123,11 +123,12 @@ func GenerateNextDesKsn(ksn []byte) ([]byte, error) {
 
 	{
 		// tc is masked to 21 bits above; pack those bits into the trailing KSN bytes.
+		// Explicit & masks keep conversions within byte range for static analysis (gosec G115).
 		length := len(ksn)
-		ksn[length-1] = byte(tc & 0xFF)        //nolint:gosec // G115: low 8 bits of 21-bit counter
-		ksn[length-2] = byte((tc >> 8) & 0xFF) //nolint:gosec // G115: mid 8 bits of 21-bit counter
+		ksn[length-1] = byte(tc & 0xFF)
+		ksn[length-2] = byte((tc >> 8) & 0xFF)
 		ksn[length-3] &= 0xE0
-		ksn[length-3] |= byte((tc >> 16) & 0x1F) //nolint:gosec // G115: high 5 bits of 21-bit counter
+		ksn[length-3] |= byte((tc >> 16) & 0x1F)
 	}
 
 	return ksn, nil
