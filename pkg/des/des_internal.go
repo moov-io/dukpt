@@ -57,20 +57,26 @@ func serializeKeyWithHexadecimal(key []byte) {
 
 // Non-reversible Key Generation Process
 func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
+	if len(keyBytes) < keyLen {
+		return nil, fmt.Errorf("key length must be at least %d bytes", keyLen)
+	}
+
 	var err error
 	cryptoReg1 := make([]byte, des.BlockSize)
 	cryptoReg2 := make([]byte, des.BlockSize)
+	leftKey := keyBytes[:des.BlockSize]
+	rightKey := keyBytes[des.BlockSize:keyLen]
 
 	// The 64 right-most bits of the Key Serial Number Register is transferred into Crypto Register-1
 	copy(cryptoReg1, ksnBytes[len(ksnBytes)-des.BlockSize:])
 
 	// 1) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-2
 	for index := range cryptoReg2 {
-		cryptoReg2[index] = cryptoReg1[index] ^ keyBytes[index+8]
+		cryptoReg2[index] = cryptoReg1[index] ^ rightKey[index]
 	}
 
 	// 2) Crypto Register-2 DEA-encrypted using, as the key, the left half of the Key Register goes to Crypto Register-2
-	cipher1, _ := encryption.NewDesECB(keyBytes[:des.BlockSize])
+	cipher1, _ := encryption.NewDesECB(leftKey)
 	cryptoReg2, err = cipher1.Encrypt(cryptoReg2)
 	if err != nil {
 		return nil, err
@@ -78,21 +84,23 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 3) Crypto Register-2 XORed with the right half of the Key Register goes to Crypto Register-2
 	for index := range cryptoReg2 {
-		cryptoReg2[index] = cryptoReg2[index] ^ keyBytes[index+8]
+		cryptoReg2[index] = cryptoReg2[index] ^ rightKey[index]
 	}
 
 	// See https://github.com/Abirdcfly/dupword/issues/26 for a fix to needing nolint
 	//nolint:dupword
 	// 4) XOR the Key Register with hexadecimal C0C0 C0C0 0000 0000 C0C0 C0C0 0000 0000
 	serializeKeyWithHexadecimal(keyBytes)
+	leftKey = keyBytes[:des.BlockSize]
+	rightKey = keyBytes[des.BlockSize:keyLen]
 
 	// 5) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
 	for index := range cryptoReg1 {
-		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
+		cryptoReg1[index] = cryptoReg1[index] ^ rightKey[index]
 	}
 
 	// 6) Crypto Register-1 DEA-encrypted using, as the key, the left half of the Key Register goes to Crypto Register-1
-	cipher2, _ := encryption.NewDesECB(keyBytes[:des.BlockSize])
+	cipher2, _ := encryption.NewDesECB(leftKey)
 	cryptoReg1, err = cipher2.Encrypt(cryptoReg1)
 	if err != nil {
 		return nil, err
@@ -100,7 +108,7 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 7) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
 	for index := range cryptoReg1 {
-		cryptoReg1[index] = cryptoReg1[index] ^ keyBytes[index+keyLen/2]
+		cryptoReg1[index] = cryptoReg1[index] ^ rightKey[index]
 	}
 
 	return append(cryptoReg1, cryptoReg2...), nil

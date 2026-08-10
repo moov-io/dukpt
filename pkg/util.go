@@ -123,10 +123,10 @@ func GenerateNextDesKsn(ksn []byte) ([]byte, error) {
 
 	{
 		length := len(ksn)
-		ksn[length-1] = byte(tc)
-		ksn[length-2] = byte(tc >> 8)
+		ksn[length-1] = byte(tc & 0xff)
+		ksn[length-2] = byte((tc >> 8) & 0xff)
 		ksn[length-3] &= 0xE0
-		ksn[length-3] |= byte(tc >> 16)
+		ksn[length-3] |= byte((tc >> 16) & 0x1f)
 	}
 
 	return ksn, nil
