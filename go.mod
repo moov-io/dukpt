@@ -9,7 +9,7 @@ require (
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
-	github.com/moov-io/base v0.62.1
+	github.com/moov-io/base v0.63.0
 	github.com/moov-io/pinblock v0.0.0-20260807190805-1be64c9ef7f0
 	github.com/stretchr/testify v1.11.1
 )
@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/rickar/cal/v2 v2.1.28 // indirect
+	github.com/rickar/cal/v2 v2.1.29 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
