@@ -7,14 +7,23 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	moovhttp "github.com/moov-io/base/http"
 	"github.com/stretchr/testify/require"
 )
+
+func allowTestCORS(t *testing.T) {
+	t.Helper()
+	t.Setenv(moovhttp.CORSAllowedOriginsEnv, "https://moov.io")
+	moovhttp.ResetCORSAllowlistForTest()
+	t.Cleanup(moovhttp.ResetCORSAllowlistForTest)
+}
 
 func mockHttpHandler() http.Handler {
 	return MakeHTTPHandler(NewService(NewRepositoryInMemory(nil)))
 }
 
 func TestRouting_ping(t *testing.T) {
+	allowTestCORS(t)
 	router := mockHttpHandler()
 
 	req := httptest.NewRequest("GET", "/ping", nil)
@@ -39,6 +48,7 @@ func TestRouting_ping(t *testing.T) {
 }
 
 func TestRouting_machine_mgmt(t *testing.T) {
+	allowTestCORS(t)
 	router := mockHttpHandler()
 
 	// creating machine
