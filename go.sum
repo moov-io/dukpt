@@ -50,6 +50,8 @@ github.com/moov-io/pinblock v0.0.0-20260825205814-44e058957567 h1:x7bOlPMCOG52Vq
 github.com/moov-io/pinblock v0.0.0-20260825205814-44e058957567/go.mod h1:VOZ+iVepCjx3lEU7UCffO4j/k4J0s7RX0lyPKF7UqBg=
 github.com/moov-io/pinblock v0.0.0-20260826142824-666e706440f8 h1:LmQPsEN9qsS/OWjRqeFSV2c1umO7HGPR60+l0oq4Kh4=
 github.com/moov-io/pinblock v0.0.0-20260826142824-666e706440f8/go.mod h1:VOZ+iVepCjx3lEU7UCffO4j/k4J0s7RX0lyPKF7UqBg=
+github.com/moov-io/pinblock v0.0.0-20260827033107-e54ee339ba26 h1:H3hQxG1JeCl6NqgIR3GCHzC1UgZ9FwofcUI+ZZ8Lqjs=
+github.com/moov-io/pinblock v0.0.0-20260827033107-e54ee339ba26/go.mod h1:VOZ+iVepCjx3lEU7UCffO4j/k4J0s7RX0lyPKF7UqBg=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
