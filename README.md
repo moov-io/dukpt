@@ -46,7 +46,7 @@ This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.1
 ```
 $ git@github.com:moov-io/dupkt.git
 
-$ go get -u github.com/moov-io/dupkt
+$ go get -u github.com/moov-io/dukpt
 ```
 
 ### DUPKT apis
