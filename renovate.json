@@ -2,6 +2,10 @@
   "extends": [
     "config:base"
   ],
+  "automergeType": "pr",
+  "ignoreReviewers": [
+    "adamdecaf"
+  ],
   "groupName": "all",
   "packageRules": [
     {
