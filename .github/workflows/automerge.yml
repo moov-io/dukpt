@@ -1,0 +1,33 @@
+# Enable GitHub auto-merge for Renovate and Dependabot PRs.
+# Renovate's platformAutomerge only runs at PR creation and is skipped when a
+# ruleset or CODEOWNERS review is required, so those PRs otherwise sit until
+# the next Renovate job. Use https://app.stepsecurity.io/ to improve workflow security
+name: Automerge dependency PRs
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions: {}
+
+jobs:
+  automerge:
+    if: github.actor == 'renovate[bot]' || github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # --auto waits for required checks/reviews when they exist.
+          # With none configured, GitHub merges immediately.
+          if ! gh pr merge "$PR" --repo "$REPO" --auto --merge; then
+            gh pr merge "$PR" --repo "$REPO" --merge
+          fi

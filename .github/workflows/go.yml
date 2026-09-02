@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ master ]
 
+concurrency:
+  group: go-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -13,6 +17,7 @@ jobs:
   build:
     name: Go Build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
