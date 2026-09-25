@@ -1,6 +1,6 @@
 module github.com/moov-io/dukpt
 
-go 1.25.8
+go 1.26.0
 
 toolchain go1.27.1
 
