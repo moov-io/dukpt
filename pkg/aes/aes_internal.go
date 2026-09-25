@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/moov-io/dukpt/encryption"
 	"github.com/moov-io/dukpt/pkg"
@@ -178,6 +179,10 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 		data.Length = keyHMAC256Bits
 	default:
 		return nil, errors.New("unsupported key type")
+	}
+
+	if len(initialKeyID) < initialKeyIdLength {
+		return nil, fmt.Errorf("initial key id length must be at least %d bytes", initialKeyIdLength)
 	}
 
 	switch keyUsage {

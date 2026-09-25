@@ -44,6 +44,9 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(ksn) < initialKeyIdLength {
+		return nil, fmt.Errorf("ksn length must be at least %d bytes", initialKeyIdLength)
+	}
 
 	derivationData, err := createDerivationData(usageForKeyInitialKey, keyType, ksn[:8], 0)
 	if err != nil {
