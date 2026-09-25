@@ -1,6 +1,7 @@
 package aes
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"testing"
@@ -181,4 +182,17 @@ func TestAES128(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestShortAesKsnReturnsError(t *testing.T) {
+	bdk := bytes.Repeat([]byte{0x11}, 16)
+	_, err := DerivationOfInitialKey(bdk, []byte{1, 2, 3})
+	require.Error(t, err)
+
+	// Last four bytes are a transaction counter with one bit set, so derivation slices the KSN.
+	_, err = DeriveCurrentTransactionKey(bdk, []byte{0x00, 0x80, 0x00, 0x00, 0x00})
+	require.Error(t, err)
+
+	_, err = pkg.GenerateNextAesKsn([]byte{1, 2, 3, 4, 5})
+	require.Error(t, err)
 }

@@ -56,6 +56,10 @@ func GenerateNextAesKsn(ksn []byte) ([]byte, error) {
 		return nil, errors.New("transaction already counter exhausted")
 	}
 
+	if len(ksn) < 8 {
+		return nil, errors.New("ksn length must be at least 8 bytes")
+	}
+
 	tc++
 	for tc <= tcMax {
 		bitCount := 0
