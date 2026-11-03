@@ -23,6 +23,7 @@ This project implements the ANSI X9.24-3:2017 standard for TDES and AES Derived 
     - [Go library](#go-library)
     - [DUPKT apis](#dupkt-apis)
     - [How to](#how-to)
+    - [What the caller must do](#what-the-caller-must-do)
     - [Command lines](#command-lines)
     - [Service Instance](#service-instance)
     - [Rest APIs](#rest-apis)
@@ -137,6 +138,39 @@ Data (pin, mac, normal data) is encrypted/decrypted using generated initial key 
         return err
     }
 ```
+
+### What the caller must do
+
+The library derives and uses keys; it keeps no state. ANSI X9.24-3 puts the following
+on the system that uses it, and getting them wrong breaks DUKPT's security without any
+error from this package.
+
+- **Issue each Initial Key ID once.** An AES Initial Key ID is 8 bytes: a 4-byte BDK ID
+  followed by a 4-byte Derivation ID (X9.24-3 §5.1). The initial key depends only on the
+  BDK and this ID, so issuing the same ID twice issues the same initial key, and the second
+  device's transaction counter starts over, repeating transaction keys the first device
+  already used. Do not compute the ID from something stable such as a device serial
+  number or a terminal ID: re-provisioning that device would hand it the same key again.
+  Draw a fresh Derivation ID for every initial key and record every ID ever issued under a
+  BDK, so none is reused.
+- **Validate the KSN before deriving.** A transaction counter of zero names no transaction
+  key: `DeriveCurrentTransactionKey` applies one derivation step per set counter bit, so
+  with no bits set the "transaction key" is the initial key itself. A counter with more than
+  16 bits set (AES) is one a conforming device never produces. Check
+  `pkg.IsValidAesKsn(ksn)` before deriving from a KSN you received.
+- **Reject replayed counters on the host.** Each counter selects a transaction key meant
+  to be used once, and a device advances its counter for every transaction. X9.24-3 says
+  the receiving system should reject a counter at or below one it has already processed
+  for the same Initial Key ID. Keep the highest counter accepted per Initial Key ID, and
+  update it atomically.
+- **Check what you decrypt.** `DecryptData` is AES-CBC and authenticates nothing: under
+  the wrong key it still returns bytes, not an error. Check the plaintext's format (or a
+  MAC) before trusting it.
+- **Keep the previous KSN if you need it.** Copy it before calling
+  `GenerateNextAesKsn` or `GenerateNextDesKsn`; in v1.0.0 both write the new counter into
+  the slice passed in.
+- **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial
+  Key ID) for AES, so passing either the ID or a full 12-byte KSN gives the same key.
 
 ### Command lines
 
@@ -264,6 +298,13 @@ In above example, the execution is to derive initial key with specified algorith
 
 ### Service instance
 DUKPT library provided service instance that support multi dukpt encrypt machines. 
+
+The service and its REST API are a **test simulator**, not production key management. It
+looks machines up by their initial key, a secret, which appears in the REST paths
+(`/machine/{ik}`); the in-memory repository holds the BDK, initial key and transaction key
+in plain text; and it does none of the checks in [What the caller must
+do](#what-the-caller-must-do). Use it to generate test vectors or exercise a device, not to
+hold real keys.
 ```
 type Service interface {
 	CreateMachine(m *Machine) error
