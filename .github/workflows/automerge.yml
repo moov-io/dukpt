@@ -12,7 +12,8 @@ permissions: {}
 
 jobs:
   automerge:
-    if: github.actor == 'renovate[bot]' || github.actor == 'dependabot[bot]'
+    # Use the PR author, not github.actor — actor is the last committer and can be spoofed.
+    if: (github.event.pull_request.user.login == 'renovate[bot]' || github.event.pull_request.user.login == 'dependabot[bot]') && github.repository == github.event.pull_request.head.repo.full_name
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
