@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"github.com/chmike/cmac-go"
@@ -16,6 +17,18 @@ import (
 /*
 ANSI X9.24-3-2017 (Retail Financial Services Symmetric Key Management)
 */
+
+// ErrInvalidTransactionCounter is returned by DeriveCurrentTransactionKey when
+// the KSN's transaction counter is not one a conforming terminal can use: zero,
+// or with more than 16 bits set (see pkg.IsValidAesKsn).
+//
+// A counter of zero is the important case. The transaction key is derived by
+// applying one derivation step per set counter bit, so a zero counter applies
+// none and the "transaction key" is the Initial Key itself. Every function that
+// takes the result (EncryptData, DecryptData, EncryptPin, DecryptPin,
+// GenerateCMAC, GenerateHMAC) would then work directly under the Initial Key.
+// A host that derives keys from a device-supplied KSN must not do that.
+var ErrInvalidTransactionCounter = errors.New("invalid AES DUKPT transaction counter: zero or more than 16 bits set")
 
 const (
 	KeyAES128Type  = "AES128"
@@ -67,11 +80,15 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 //
 // Return Params:
 //   - result is transaction key of ik's length
-//   - err
+//   - err wraps ErrInvalidTransactionCounter when the KSN's counter is zero or
+//     has more than 16 bits set: a zero counter would return ik itself
 func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 	keyType, err := getDerivationKeyType(len(ik))
 	if err != nil {
 		return nil, err
+	}
+	if !pkg.IsValidAesKsn(ksn) {
+		return nil, fmt.Errorf("%w: %X", ErrInvalidTransactionCounter, pkg.GetAesTcFromKsn(ksn))
 	}
 
 	transactionKey := make([]byte, len(ik))

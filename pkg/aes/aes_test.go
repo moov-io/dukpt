@@ -196,3 +196,36 @@ func TestShortAesKsnReturnsError(t *testing.T) {
 	_, err = pkg.GenerateNextAesKsn([]byte{1, 2, 3, 4, 5})
 	require.Error(t, err)
 }
+
+// TestDeriveCurrentTransactionKey_RejectsInvalidCounter: a zero counter applies
+// no derivation step, so without this check the "transaction key" returned is
+// the Initial Key itself. Counters with more than 16 bits set are never
+// produced by a conforming terminal. Both are refused; the first valid counter
+// still derives.
+func TestDeriveCurrentTransactionKey_RejectsInvalidCounter(t *testing.T) {
+	bdk := []byte{0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1}
+	initialKeyID := []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56}
+
+	ik, err := DerivationOfInitialKey(bdk, initialKeyID)
+	require.NoError(t, err)
+
+	for _, tc := range []struct {
+		name    string
+		counter []byte
+	}{
+		{"zero counter", []byte{0x00, 0x00, 0x00, 0x00}},
+		{"17 bits set", []byte{0x00, 0x01, 0xFF, 0xFF}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ksn := append(append([]byte{}, initialKeyID...), tc.counter...)
+			key, err := DeriveCurrentTransactionKey(ik, ksn)
+			require.ErrorIs(t, err, ErrInvalidTransactionCounter)
+			require.Nil(t, key)
+		})
+	}
+
+	ksn := append(append([]byte{}, initialKeyID...), 0x00, 0x00, 0x00, 0x01)
+	key, err := DeriveCurrentTransactionKey(ik, ksn)
+	require.NoError(t, err)
+	require.NotEqual(t, ik, key)
+}
