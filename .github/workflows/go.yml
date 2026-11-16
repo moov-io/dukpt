@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, v1 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, v1 ]
 
 concurrency:
   group: go-${{ github.event.pull_request.number || github.ref }}
