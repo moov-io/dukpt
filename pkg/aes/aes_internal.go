@@ -126,8 +126,9 @@ func getDerivationKeyType(keyLen int) (string, error) {
 }
 
 // derivationKey derives a key from key and derivationData (ANSI X9.24-3-2017
-// 6.3.1): one AES block of derivation data is encrypted per 128 bits of the
-// derived key, incrementing the Key Block Counter each time.
+// 6.3.1 Derive_Key): one AES block of derivation data is encrypted per 128 bits
+// of the derived key, incrementing the Key Block Counter each time, and the key
+// is the leftmost L bits of the result, where L is derivationData.Length.
 //
 // The returned key belongs to the caller, who must clear it. key is not
 // modified. Each encrypted block is cleared once copied into the result, and on
@@ -158,7 +159,12 @@ func derivationKey(key []byte, derivationData *keyDerivationData) ([]byte, error
 		derivationData.KeyBlockCounter++
 	}
 
-	return derivedKey, nil
+	// 6.3.1: derivedKey = result[0..(L/8)-1]. A 192-bit key takes two blocks,
+	// so the last 8 bytes of the second block are not part of the key. Clear
+	// them, and cap the result at the key length so the caller's slice cannot
+	// reach them.
+	wipe(derivedKey[derivedKeyLen:])
+	return derivedKey[:derivedKeyLen:derivedKeyLen], nil
 }
 
 // Create key derivation data
