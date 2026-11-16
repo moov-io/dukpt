@@ -204,14 +204,19 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 		return nil, fmt.Errorf("initial key id length must be at least %d bytes", initialKeyIdLength)
 	}
 
+	// Always a fresh 8-byte buffer. Appending the counter to a subslice of
+	// initialKeyID would write it into the caller's array, which for a 12-byte
+	// KSN is the KSN's own counter field.
+	data.InitialKeyID = make([]byte, initialKeyIdLength)
 	switch keyUsage {
 	case usageForKeyInitialKey:
-		data.InitialKeyID = make([]byte, initialKeyIdLength)
-		copy(data.InitialKeyID, initialKeyID)
+		// Table 2: the full Initial Key ID.
+		copy(data.InitialKeyID, initialKeyID[:initialKeyIdLength])
 	default:
-		tcBuf := make([]byte, 4)
-		binary.BigEndian.PutUint32(tcBuf, tc)
-		data.InitialKeyID = append(initialKeyID[derivationKeyIdLength:derivationKeyIdLength+derivationIdLength], tcBuf...)
+		// Table 3: the Derivation ID (bytes 4..7 of the Initial Key ID), then
+		// the transaction counter.
+		copy(data.InitialKeyID, initialKeyID[derivationKeyIdLength:derivationKeyIdLength+derivationIdLength])
+		binary.BigEndian.PutUint32(data.InitialKeyID[derivationIdLength:], tc)
 	}
 
 	return &data, nil
