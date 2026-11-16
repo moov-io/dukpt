@@ -456,9 +456,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
-// The response types implement errorer so encodeResponse reports a failed
-// operation with an error status and the error's message. Without these, an
-// error was encoded as an empty JSON object under HTTP 200.
+// encodeResponse reads errorer to set the status and message of a failed operation.
 func (r getMachinesResponse) error() error   { return r.Err }
 func (r findMachineResponse) error() error   { return r.Err }
 func (r createMachineResponse) error() error { return r.Err }

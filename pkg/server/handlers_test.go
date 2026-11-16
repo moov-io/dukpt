@@ -25,8 +25,8 @@ func postJSON(t *testing.T, router http.Handler, path string, body any) (int, ma
 	return w.Code, out
 }
 
-// createTestMachine creates a machine and advances it to its first KSN, so it
-// has a transaction key, and returns its Initial Key.
+// createTestMachine creates a machine through POST /machine and returns its
+// Initial Key.
 func createTestMachine(t *testing.T, router http.Handler, key BaseKey) string {
 	t.Helper()
 	code, created := postJSON(t, router, "/machine", key)
@@ -84,14 +84,30 @@ func TestHandlers_RoundTrip(t *testing.T) {
 	}
 }
 
-// A failed operation is reported with an error status and its message, not
-// as an empty object under 200.
-func TestHandlers_ReportErrors(t *testing.T) {
+// An operation on an unknown machine returns 404 with a message that names the
+// operation and does not echo the Initial Key.
+func TestHandlers_UnknownMachine(t *testing.T) {
 	router := mockHttpHandler()
+	const ik = "00112233445566778899aabbccddeeff"
 
-	code, out := postJSON(t, router, "/encrypt_data/00112233445566778899AABBCCDDEEFF", map[string]string{"Data": "x"})
-	require.NotEqual(t, http.StatusOK, code)
-	msg, ok := out["error"].(string)
-	require.True(t, ok, "error should be a message: %v", out)
-	require.Contains(t, msg, "encrypt data")
+	for _, tc := range []struct {
+		path, operation string
+		body            map[string]string
+	}{
+		{"/encrypt_data/", "encrypt data", map[string]string{"Data": "x"}},
+		{"/decrypt_data/", "decrypt data", map[string]string{"Data": "00"}},
+		{"/encrypt_pin/", "encrypt pin", map[string]string{"Pin": "1234", "Pan": "4111111111111111"}},
+		{"/decrypt_pin/", "decrypt pin", map[string]string{"Encrypted": "00", "Pan": "4111111111111111"}},
+		{"/generate_mac/", "generate mac", map[string]string{"Data": "x"}},
+		{"/generate_ksn/", "make next ksn", map[string]string{}},
+	} {
+		t.Run(tc.path, func(t *testing.T) {
+			code, out := postJSON(t, router, tc.path+ik, tc.body)
+			require.Equal(t, http.StatusNotFound, code, "%v", out)
+			msg, ok := out["error"].(string)
+			require.True(t, ok, "error should be a message: %v", out)
+			require.Contains(t, msg, tc.operation)
+			require.NotContains(t, strings.ToLower(msg), ik, "the Initial Key must not appear in the error")
+		})
+	}
 }

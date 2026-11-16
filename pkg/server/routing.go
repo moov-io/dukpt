@@ -252,10 +252,10 @@ func codeFrom(err error) int {
 		return http.StatusBadRequest
 	}
 
-	switch err {
-	case ErrNotFound:
+	switch {
+	case errors.Is(err, ErrNotFound):
 		return http.StatusNotFound
-	case ErrAlreadyExists:
+	case errors.Is(err, ErrAlreadyExists):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
