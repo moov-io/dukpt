@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/des" //nolint:gosec
 	"fmt"
+	"strings"
 
 	"github.com/moov-io/dukpt/v2/encryption"
 	"github.com/moov-io/dukpt/v2/internal/memzero"
+	"github.com/moov-io/pinblock/formats"
 )
 
 // wipe clears a buffer that held key material, a clear PIN block, or data
@@ -143,6 +145,17 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	nextKey = append(nextKey, cryptoReg1...)
 	nextKey = append(nextKey, cryptoReg2...)
 	return nextKey, nil
+}
+
+// tdesPinFormatter returns the PIN block format named by format. ISO-4 is
+// refused: it is an AES format with a 16-byte block, and TDES DUKPT encrypts
+// 8-byte blocks.
+func tdesPinFormatter(format string) (formats.Format, error) {
+	name := strings.ToUpper(format)
+	if name == "ISO-4" {
+		return nil, fmt.Errorf("pin block format ISO-4 is for AES; use the aes package")
+	}
+	return formats.NewFormatter(name)
 }
 
 func encryptPinblock(currentKey, pinblock []byte) ([]byte, error) {

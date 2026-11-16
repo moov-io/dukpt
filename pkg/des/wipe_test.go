@@ -262,7 +262,20 @@ func TestPinFunctions_ByteOwnership(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, pin, decrypted)
 	clear(decrypted)
+	require.Equal(t, make([]byte, len(pin)), decrypted)
 	again, err := DecryptPin(wipeTestTK, encrypted, pan, "ISO-0")
 	require.NoError(t, err)
 	require.Equal(t, pin, again)
+}
+
+// ISO-4 is an AES format with a 16-byte block. The TDES PIN functions refuse it
+// before formatting anything.
+func TestPinFunctions_RefuseISO4(t *testing.T) {
+	r := recordWipes(t)
+	_, err := EncryptPin(wipeTestTK, []byte("1234"), []byte("4012345678909"), "ISO-4")
+	require.ErrorContains(t, err, "ISO-4 is for AES")
+	require.Empty(t, r.buffers, "no PIN block was built")
+
+	_, err = DecryptPin(wipeTestTK, make([]byte, 8), []byte("4012345678909"), "iso-4")
+	require.ErrorContains(t, err, "ISO-4 is for AES")
 }

@@ -237,6 +237,7 @@ func TestPinFunctions_ByteOwnership(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, pin, decrypted)
 	clear(decrypted)
+	require.Equal(t, make([]byte, len(pin)), decrypted)
 	again, err := DecryptPin(tk, ksn, encrypted, pan, KeyAES128Type)
 	require.NoError(t, err)
 	require.Equal(t, pin, again)

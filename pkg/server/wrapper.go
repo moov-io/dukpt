@@ -2,6 +2,8 @@ package server
 
 import (
 	"errors"
+
+	"github.com/moov-io/dukpt/v2"
 	"github.com/moov-io/dukpt/v2/pkg"
 	"github.com/moov-io/dukpt/v2/pkg/aes"
 	"github.com/moov-io/dukpt/v2/pkg/des"
@@ -70,10 +72,15 @@ func EncryptPin(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
+	// The PIN and PAN arrive as text over HTTP; clear the byte copies made here.
+	pin, pan := []byte(params.PIN), []byte(params.PAN)
+	defer dukpt.Clear(pin)
+	defer dukpt.Clear(pan)
+
 	if params.Algorithm == pkg.AlgorithmAes {
-		buf, err = aes.EncryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), []byte(params.PIN), []byte(params.PAN), params.AlgorithmKey)
+		buf, err = aes.EncryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pin, pan, params.AlgorithmKey)
 	} else {
-		buf, err = des.EncryptPin(pkg.HexDecode(params.TK), []byte(params.PIN), []byte(params.PAN), params.Format)
+		buf, err = des.EncryptPin(pkg.HexDecode(params.TK), pin, pan, params.Format)
 	}
 
 	if err != nil {
@@ -86,16 +93,23 @@ func DecryptPin(params UnifiedParams) (string, error) {
 	var buf []byte
 	var err error
 
+	pan := []byte(params.PAN)
+	defer dukpt.Clear(pan)
+
 	if params.Algorithm == pkg.AlgorithmAes {
-		buf, err = aes.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.PIN), []byte(params.PAN), params.AlgorithmKey)
+		buf, err = aes.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.PIN), pan, params.AlgorithmKey)
 	} else {
-		buf, err = des.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.PIN), []byte(params.PAN), params.Format)
+		buf, err = des.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.PIN), pan, params.Format)
 	}
 
 	if err != nil {
 		return "", err
 	}
-	return string(buf), nil
+	// The HTTP response carries the PIN as text, which cannot be cleared; the
+	// byte copy can.
+	out := string(buf)
+	dukpt.Clear(buf)
+	return out, nil
 }
 
 func GenerateMac(params UnifiedParams) (string, error) {

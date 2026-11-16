@@ -7,11 +7,9 @@ ANS X9.24-1:2009 (Retail Financial Services Symmetric Key Management)
 import (
 	"crypto/cipher"
 	"fmt"
-	"strings"
 
 	"github.com/moov-io/dukpt/v2/encryption"
 	"github.com/moov-io/dukpt/v2/pkg"
-	"github.com/moov-io/pinblock/formats"
 )
 
 // Derive Initial Key (IK) from Base Derivative Key and Key Serial Number
@@ -153,7 +151,7 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 // returning. currentKey, pin and pan are not modified and stay the caller's to
 // clear. No copy of the PIN is ever made as a string.
 func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error) {
-	formatter, err := formats.NewFormatter(strings.ToUpper(format))
+	formatter, err := tdesPinFormatter(format)
 	if err != nil {
 		return nil, err
 	}
@@ -163,6 +161,9 @@ func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error) {
 		return nil, err
 	}
 	defer wipe(pinBlock)
+	if len(pinBlock) != desBlockLen {
+		return nil, fmt.Errorf("pin block format %s does not produce an 8-byte block", format)
+	}
 	return encryptPinblock(currentKey, pinBlock)
 }
 
@@ -188,7 +189,7 @@ func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error) {
 // dukpt.Clear once it is no longer needed. No copy of the PIN is ever made as a
 // string.
 func DecryptPin(currentKey, ciphertext, pan []byte, format string) ([]byte, error) {
-	formatter, err := formats.NewFormatter(strings.ToUpper(format))
+	formatter, err := tdesPinFormatter(format)
 	if err != nil {
 		return nil, err
 	}
