@@ -53,8 +53,8 @@ const (
 //   - reulst is initial key of bdk's length
 //   - err
 //
-// The returned Initial Key belongs to the caller, who should clear it (for
-// example with the clear builtin) once it is no longer needed. bdk and ksn are
+// The returned Initial Key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. bdk and ksn are
 // not modified, and no other copy of the Initial Key is left by this function.
 func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	keyType, err := getDerivationKeyType(len(bdk))
@@ -87,8 +87,8 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 //   - err wraps ErrInvalidTransactionCounter when the KSN's counter is zero or
 //     has more than 16 bits set: a zero counter would return ik itself
 //
-// The returned transaction key belongs to the caller, who should clear it once
-// it is no longer needed. ik is not modified. Every intermediate derivation key
+// The returned transaction key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. ik is not modified. Every intermediate derivation key
 // is cleared as soon as the next one replaces it, including when an error is
 // returned.
 func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
@@ -423,7 +423,8 @@ func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) 
 //
 // The data encryption key derived from currentKey is cleared before returning;
 // currentKey is not modified and stays the caller's to clear. The result
-// belongs to the caller, who should clear it once the data is no longer needed.
+// belongs to the caller, who should clear it with dukpt.Clear once the data is
+// no longer needed.
 func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
