@@ -360,7 +360,6 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 	ciphertext := make([]byte, len(serializePlaintext))
 	// A.4.1 Variants of the Current Key
 	// 	Encryption of the data should use T-DEA in CBC mode.
-	// A fresh block: padding iv in place would write into the caller's array.
 	iv = cbc.IV(iv, desBlockLen)
 
 	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
@@ -443,7 +442,6 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 	defer wipe(plaintext)
 	// A.4.1 Variants of the Current Key
 	// 	Encryption of the data should use T-DEA in CBC mode.
-	// A fresh block of exactly one block length; a short iv used to panic here.
 	iv = cbc.IV(iv, desBlockLen)
 
 	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT

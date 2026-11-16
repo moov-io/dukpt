@@ -59,6 +59,7 @@ func TestDeriveCurrentTransactionKey_DoesNotModifyKSN(t *testing.T) {
 func TestDeriveCurrentTransactionKey_ConcurrentSharedKSN(t *testing.T) {
 	ik := pkg.HexDecode("1273671EA26AC29AFA4D1084127652A1")
 	ksn := pkg.HexDecode("12345678901234560000000B")
+	ksnBefore := bytes.Clone(ksn)
 	want, err := DeriveCurrentTransactionKey(ik, bytes.Clone(ksn))
 	require.NoError(t, err)
 
@@ -73,6 +74,7 @@ func TestDeriveCurrentTransactionKey_ConcurrentSharedKSN(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+	require.Equal(t, ksnBefore, ksn, "the shared KSN must not be modified")
 	for i := range keys {
 		require.NoError(t, errs[i])
 		require.Equal(t, want, keys[i])

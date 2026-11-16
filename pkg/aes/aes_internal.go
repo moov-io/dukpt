@@ -204,9 +204,7 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 		return nil, fmt.Errorf("initial key id length must be at least %d bytes", initialKeyIdLength)
 	}
 
-	// Always a fresh 8-byte buffer. Appending the counter to a subslice of
-	// initialKeyID would write it into the caller's array, which for a 12-byte
-	// KSN is the KSN's own counter field.
+	// New buffer so the counter write cannot alias the caller's KSN.
 	data.InitialKeyID = make([]byte, initialKeyIdLength)
 	switch keyUsage {
 	case usageForKeyInitialKey:

@@ -394,7 +394,6 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 	}
 	defer wipe(dataKey)
 
-	// A fresh block: padding iv in place would write into the caller's array.
 	iv = cbc.IV(iv, aes.BlockSize)
 
 	repeatCnt := len(plaintext) / aes.BlockSize
@@ -467,7 +466,6 @@ func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string)
 	}
 	defer wipe(dataKey)
 
-	// A fresh block: padding iv in place would write into the caller's array.
 	iv = cbc.IV(iv, aes.BlockSize)
 
 	repeatCnt := len(ciphertext) / aes.BlockSize
