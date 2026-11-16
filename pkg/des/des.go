@@ -28,8 +28,8 @@ import (
 //   - reulst is 16 bytes initial key
 //   - err
 //
-// The returned Initial Key belongs to the caller, who should clear it (for
-// example with the clear builtin) once it is no longer needed. bdk is not
+// The returned Initial Key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. bdk is not
 // modified; the BDK variant and both halves of the Initial Key built along the
 // way are cleared before returning.
 func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
@@ -78,8 +78,8 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 //   - result is 16 bytes transaction key
 //   - err
 //
-// The returned transaction key belongs to the caller, who should clear it once
-// it is no longer needed. ik is not modified. The Key Register and every
+// The returned transaction key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. ik is not modified. The Key Register and every
 // intermediate key are cleared before returning, including on an error.
 func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 	keyBytes := make([]byte, keyLen)
@@ -255,6 +255,7 @@ func GenerateMac(currentKey, message []byte, action string) ([]byte, error) {
 		repeatCnt++
 	}
 	serializePlaintext := make([]byte, repeatCnt*desBlockLen)
+	defer wipe(serializePlaintext)
 	copy(serializePlaintext, message)
 
 	var err error
@@ -390,8 +391,8 @@ func EncryptData(currentKey, iv, plaintext []byte, action string) ([]byte, error
 //
 // The data key variant and the derived data encryption key and its halves are
 // cleared before returning; currentKey is not modified and stays the caller's
-// to clear. The result belongs to the caller, who should clear it once the data
-// is no longer needed.
+// to clear. The result belongs to the caller, who should clear it with
+// dukpt.Clear once the data is no longer needed.
 func DecryptData(currentKey, ciphertext, iv []byte, action string) ([]byte, error) {
 	dataKey := make([]byte, keyLen)
 	defer wipe(dataKey)
