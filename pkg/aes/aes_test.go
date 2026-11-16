@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/v2/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,7 +110,7 @@ var InitialSequence = []SequenceItem{
 func TestAES128(t *testing.T) {
 	pin := "1234"
 	pan := "4111111111111111"
-	macData := "4012345678909D987"
+	macData := []byte("4012345678909D987")
 
 	bdk := []byte{0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1}
 	initialKeyID := []byte{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56}

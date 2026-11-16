@@ -7,14 +7,23 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/moov-io/dukpt/v2/internal/memzero"
 )
 
 type DesECB struct {
 	cipherBlock cipher.Block
 }
 
+// NewTripleDesECB returns a TDEA cipher in ECB mode. A 16-byte key is used as
+// a two-key TDEA key (K1 K2 K1); a 24-byte key as a three-key one.
+//
+// The 24-byte key bundle built here is cleared before returning. The caller
+// still owns key and is responsible for clearing it.
 func NewTripleDesECB(key []byte) (*DesECB, error) {
-	var tripleDESKey []byte
+	// Sized up front so append never reallocates and strands a partial copy.
+	tripleDESKey := make([]byte, 0, 24)
+	defer memzero.Bytes(tripleDESKey[:cap(tripleDESKey)])
 
 	k := len(key)
 	switch k {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/v2/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -83,7 +83,7 @@ func TestDeriveCurrentTransactionKey(t *testing.T) {
 	pin := "1234"
 	pan := "4012345678909"
 	FormatVersion := "ISO-0"
-	data := "4012345678909D987"
+	data := []byte("4012345678909D987")
 
 	for index, item := range InitialSequence {
 		t.Run(fmt.Sprintf("Sequence #%d KSN: %s", index+1, pkg.HexEncode(item.Ksn)), func(t *testing.T) {

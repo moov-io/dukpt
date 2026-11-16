@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/moov-io/dukpt"
+	"github.com/moov-io/dukpt/v2"
 )
 
 func help() {

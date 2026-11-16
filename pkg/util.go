@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+
+	"github.com/moov-io/dukpt/v2/internal/memzero"
 )
 
 const (
@@ -13,6 +15,12 @@ const (
 	MaxTypeHmac  = "hmac"
 )
 
+// HexDecode decodes a hex string, returning nil when data is empty or not valid
+// hex.
+//
+// When data is a key, note that a Go string cannot be cleared: the hex form
+// stays in memory until the garbage collector reuses it. The returned slice is
+// the caller's, and the caller should clear it once the key is no longer needed.
 func HexDecode(data string) []byte {
 	if len(data) == 0 {
 		return nil
@@ -27,12 +35,18 @@ func HexDecode(data string) []byte {
 	return out
 }
 
+// HexEncode returns the lower-case hex encoding of data.
+//
+// The intermediate buffer is cleared, but the result is a string, which cannot
+// be. Encoding a key with HexEncode leaves that key's hex form in memory until
+// the garbage collector reuses it.
 func HexEncode(data []byte) string {
 	if len(data) == 0 {
 		return ""
 	}
 
 	out := make([]byte, hex.EncodedLen(len(data)))
+	defer memzero.Bytes(out)
 	hex.Encode(out, data)
 	return string(out)
 }

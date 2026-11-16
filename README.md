@@ -47,7 +47,7 @@ This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.1
 ```
 $ git@github.com:moov-io/dupkt.git
 
-$ go get -u github.com/moov-io/dukpt
+$ go get -u github.com/moov-io/dukpt/v2
 ```
 
 ### DUPKT apis
@@ -60,9 +60,9 @@ Moov dukpt project supported general utility functions for managing transaction 
     func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error)
     func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, error)
     func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (string, error)
-    func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error)
-    func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error)
-    func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, error)
+    func GenerateMac(currentKey, message []byte, action string) ([]byte, error)
+    func EncryptData(currentKey, iv, plaintext []byte, action string) ([]byte, error)
+    func DecryptData(currentKey, ciphertext, iv []byte, action string) ([]byte, error)
 ```
 
 - Functions for advanced encryption standard (aes)
@@ -71,10 +71,10 @@ Moov dukpt project supported general utility functions for managing transaction 
     func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error)
     func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte, error)
     func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) (string, error)
-    func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error)
-    func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error)
-    func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) ([]byte, error)
-    func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string) (string, error)
+    func GenerateCMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error)
+    func GenerateHMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error)
+    func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) ([]byte, error)
+    func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) ([]byte, error)
 ```
 
 - Utility function that used to get next key serial number 
@@ -169,6 +169,16 @@ error from this package.
 - **Keep the previous KSN if you need it.** Copy it before calling
   `GenerateNextAesKsn` or `GenerateNextDesKsn`; in v1.0.0 both write the new counter into
   the slice passed in.
+- **Clear the keys and data you hold.** Every key the library returns (initial key,
+  transaction key) and the result of `DecryptData` belong to the caller, who should clear
+  them (for example with `clear(key)`) as soon as they are no longer needed. The library
+  clears its own intermediates: each derivation step's key, the working keys for PIN, MAC
+  and data encryption, and padded copies of data. It cannot clear the key schedules held
+  inside `crypto/aes`, `crypto/des`, `crypto/hmac` and the CMAC implementation, nor any
+  string: a PIN, a PAN, or a key in hex. The PIN functions take and return strings because
+  `github.com/moov-io/pinblock` formats PIN blocks as strings, and `pkg.HexEncode` and
+  `pkg.HexDecode`, the HTTP server and the CLI handle keys in hex, so prefer the `[]byte`
+  functions in `pkg/aes` and `pkg/des` when handling live keys.
 - **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial
   Key ID) for AES, so passing either the ID or a full 12-byte KSN gives the same key.
 

@@ -2,9 +2,9 @@ package server
 
 import (
 	"errors"
-	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/aes"
-	"github.com/moov-io/dukpt/pkg/des"
+	"github.com/moov-io/dukpt/v2/pkg"
+	"github.com/moov-io/dukpt/v2/pkg/aes"
+	"github.com/moov-io/dukpt/v2/pkg/des"
 )
 
 type UnifiedParams struct {
@@ -107,12 +107,12 @@ func GenerateMac(params UnifiedParams) (string, error) {
 			return "", errors.New("invalid mac type")
 		}
 		if params.MacType == pkg.MaxTypeCmac {
-			buf, err = aes.GenerateCMAC(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), params.Plaintext, params.AlgorithmKey, params.Action)
+			buf, err = aes.GenerateCMAC(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), []byte(params.Plaintext), params.AlgorithmKey, params.Action)
 		} else {
-			buf, err = aes.GenerateHMAC(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), params.Plaintext, params.AlgorithmKey, params.Action)
+			buf, err = aes.GenerateHMAC(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), []byte(params.Plaintext), params.AlgorithmKey, params.Action)
 		}
 	} else {
-		buf, err = des.GenerateMac(pkg.HexDecode(params.TK), params.Plaintext, params.Action)
+		buf, err = des.GenerateMac(pkg.HexDecode(params.TK), []byte(params.Plaintext), params.Action)
 	}
 
 	if err != nil {
@@ -126,9 +126,9 @@ func EncryptData(params UnifiedParams) (string, error) {
 	var err error
 
 	if params.Algorithm == pkg.AlgorithmAes {
-		buf, err = aes.EncryptData(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.IV), params.Plaintext, params.AlgorithmKey, params.Action)
+		buf, err = aes.EncryptData(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.IV), []byte(params.Plaintext), params.AlgorithmKey, params.Action)
 	} else {
-		buf, err = des.EncryptData(pkg.HexDecode(params.TK), pkg.HexDecode(params.IV), params.Plaintext, params.Action)
+		buf, err = des.EncryptData(pkg.HexDecode(params.TK), pkg.HexDecode(params.IV), []byte(params.Plaintext), params.Action)
 	}
 
 	if err != nil {
@@ -138,7 +138,7 @@ func EncryptData(params UnifiedParams) (string, error) {
 }
 
 func DecryptData(params UnifiedParams) (string, error) {
-	var buf string
+	var buf []byte
 	var err error
 
 	if params.Algorithm == pkg.AlgorithmAes {
@@ -150,5 +150,5 @@ func DecryptData(params UnifiedParams) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return buf, nil
+	return string(buf), nil
 }

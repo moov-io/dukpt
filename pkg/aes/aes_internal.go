@@ -6,9 +6,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/moov-io/dukpt/encryption"
-	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/v2/encryption"
+	"github.com/moov-io/dukpt/v2/internal/memzero"
+	"github.com/moov-io/dukpt/v2/pkg"
 )
+
+// wipe clears a buffer that held key material, or data decrypted with it. It is
+// a variable only so tests can observe which buffers the package clears.
+var wipe = memzero.Bytes
 
 const (
 	derivationKeyIdLength    = 4
@@ -120,8 +125,15 @@ func getDerivationKeyType(keyLen int) (string, error) {
 	return "", errors.New("unsupported key length yet")
 }
 
+// derivationKey derives a key from key and derivationData (ANSI X9.24-3-2017
+// 6.3.1): one AES block of derivation data is encrypted per 128 bits of the
+// derived key, incrementing the Key Block Counter each time.
+//
+// The returned key belongs to the caller, who must clear it. key is not
+// modified. Each encrypted block is cleared once copied into the result, and on
+// an error the partial result is cleared, so no part of the derived key is left
+// behind except the one returned.
 func derivationKey(key []byte, derivationData *keyDerivationData) ([]byte, error) {
-	var derivedKey []byte
 	derivedKeyLen := int(derivationData.Length / 8)
 
 	aesEcb, err := encryption.NewAesECB(key)
@@ -129,13 +141,20 @@ func derivationKey(key []byte, derivationData *keyDerivationData) ([]byte, error
 		return nil, err
 	}
 
+	// Sized for every block up front: growing the slice with append would copy
+	// the first half of the key to a new array and abandon the old one uncleared.
+	blocks := (derivedKeyLen + aes.BlockSize - 1) / aes.BlockSize
+	derivedKey := make([]byte, 0, blocks*aes.BlockSize)
+
 	for offset := 0; offset < derivedKeyLen; offset += aes.BlockSize {
 		data := derivationData.Bytes()
 		encrypted, encErr := aesEcb.Encrypt(data)
 		if encErr != nil {
+			wipe(derivedKey[:cap(derivedKey)])
 			return nil, encErr
 		}
 		derivedKey = append(derivedKey, encrypted...)
+		wipe(encrypted)
 		derivationData.KeyBlockCounter++
 	}
 
@@ -252,6 +271,9 @@ func checkWorkingKeyLength(keyLen int, keyType string) error {
 	return nil
 }
 
+// generateDerivationKey derives a working key (PIN, MAC or data key) from the
+// transaction key in params.CurrentKey (ANSI X9.24-3-2017 6.3.4). The returned
+// key belongs to the caller, who must clear it once used.
 func generateDerivationKey(params derivationParams) ([]byte, error) {
 	tc := pkg.GetAesTcFromKsn(params.Ksn)
 	derivationData, err := createDerivationData(params.KeyUsage, params.KeyType, params.Ksn, tc)

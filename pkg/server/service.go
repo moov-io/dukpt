@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/aes"
+	"github.com/moov-io/dukpt/v2/pkg"
+	"github.com/moov-io/dukpt/v2/pkg/aes"
 )
 
 var (

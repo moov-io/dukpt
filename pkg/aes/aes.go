@@ -9,8 +9,8 @@ import (
 	"fmt"
 
 	"github.com/chmike/cmac-go"
-	"github.com/moov-io/dukpt/encryption"
-	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/v2/encryption"
+	"github.com/moov-io/dukpt/v2/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
 
@@ -52,6 +52,10 @@ const (
 // Return Params:
 //   - reulst is initial key of bdk's length
 //   - err
+//
+// The returned Initial Key belongs to the caller, who should clear it (for
+// example with the clear builtin) once it is no longer needed. bdk and ksn are
+// not modified, and no other copy of the Initial Key is left by this function.
 func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	keyType, err := getDerivationKeyType(len(bdk))
 	if err != nil {
@@ -82,6 +86,11 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 //   - result is transaction key of ik's length
 //   - err wraps ErrInvalidTransactionCounter when the KSN's counter is zero or
 //     has more than 16 bits set: a zero counter would return ik itself
+//
+// The returned transaction key belongs to the caller, who should clear it once
+// it is no longer needed. ik is not modified. Every intermediate derivation key
+// is cleared as soon as the next one replaces it, including when an error is
+// returned.
 func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 	keyType, err := getDerivationKeyType(len(ik))
 	if err != nil {
@@ -106,13 +115,20 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 		workingTc |= mask
 		derivationData, err = createDerivationData(usageForKeyDerivation, keyType, ksn, workingTc)
 		if err != nil {
+			wipe(transactionKey)
 			return nil, err
 		}
 
-		transactionKey, err = derivationKey(transactionKey, derivationData)
+		var nextKey []byte
+		nextKey, err = derivationKey(transactionKey, derivationData)
+		// The key just used is no longer needed, whether or not derivation
+		// succeeded: this clears the copy of ik on the first pass and each
+		// intermediate key after it.
+		wipe(transactionKey)
 		if err != nil {
 			return nil, err
 		}
+		transactionKey = nextKey
 	}
 
 	return transactionKey, nil
@@ -134,6 +150,12 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 // Return Params:
 //   - result is cipher text
 //   - err
+//
+// The PIN encryption key derived from currentKey is cleared before returning;
+// currentKey is not modified and stays the caller's to clear. pin and pan are
+// strings, which cannot be cleared, and the PIN block is formatted as a hex
+// string by github.com/moov-io/pinblock, so copies of the PIN remain in memory
+// until the garbage collector reuses it.
 func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
@@ -148,6 +170,7 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(pinKey)
 
 	cipher, err := encryption.NewAesECB(pinKey)
 	if err != nil {
@@ -179,6 +202,10 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 // Return Params:
 //   - result is plain text
 //   - err
+//
+// The PIN encryption key derived from currentKey is cleared before returning;
+// currentKey is not modified and stays the caller's to clear. The PIN is
+// returned as a string, which cannot be cleared.
 func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) (string, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return "", err
@@ -193,6 +220,7 @@ func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) 
 	if err != nil {
 		return "", err
 	}
+	defer wipe(pinKey)
 
 	cipher, err := encryption.NewAesECB(pinKey)
 	if err != nil {
@@ -216,14 +244,19 @@ func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) 
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - plain text is transaction request data
+//   - message is the data to authenticate
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
 //
 // Return Params:
 //   - result is 16bytes generated cmac
 //   - err
-func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error) {
+//
+// The MAC key derived from currentKey is cleared before returning; currentKey
+// is not modified and stays the caller's to clear. The CMAC's AES key schedule
+// and subkeys are held inside crypto/aes and the CMAC implementation, which
+// offer no way to clear them.
+func GenerateCMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
@@ -246,12 +279,13 @@ func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(macKey)
 
 	cm, err := cmac.New(aes.NewCipher, macKey)
 	if err != nil {
 		return nil, err
 	}
-	cm.Write([]byte(plaintext))
+	cm.Write(message)
 
 	return cm.Sum(nil), nil
 }
@@ -265,14 +299,18 @@ func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - plain text is transaction request data
+//   - message is the data to authenticate
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
 //
 // Return Params:
 //   - result is 16bytes generated cmac
 //   - err
-func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error) {
+//
+// The MAC key derived from currentKey is cleared before returning; currentKey
+// is not modified and stays the caller's to clear. crypto/hmac keeps its own
+// padded copies of the key, which it offers no way to clear.
+func GenerateHMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error) {
 	if err := checkWorkingKeyLengthHmac(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
@@ -295,9 +333,10 @@ func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(macKey)
 
 	mac := hmac.New(sha256.New, macKey)
-	mac.Write([]byte(plaintext))
+	mac.Write(message)
 
 	return mac.Sum(nil), nil
 }
@@ -311,14 +350,18 @@ func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, acti
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
 //   - iv is initial vector
-//   - plain text is transaction request data
+//   - plaintext is the data to encrypt, zero-padded to a multiple of 16 bytes
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
 //
 // Return Params:
 //   - result is encrypted data
 //   - err
-func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) ([]byte, error) {
+//
+// The data encryption key derived from currentKey, and the padded copy of
+// plaintext, are cleared before returning; currentKey is not modified and stays
+// the caller's to clear; plaintext is not modified and is also the caller's.
+func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
@@ -341,6 +384,7 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(dataKey)
 
 	if iv == nil {
 		// default null
@@ -355,6 +399,7 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 		repeatCnt++
 	}
 	serializePlaintext := make([]byte, repeatCnt*aes.BlockSize)
+	defer wipe(serializePlaintext)
 	copy(serializePlaintext, plaintext)
 
 	ciphertext := make([]byte, len(serializePlaintext))
@@ -384,11 +429,16 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 //   - action is request or response action
 //
 // Return Params:
-//   - result is transaction request data ( must be a multiple of aes block length [16])
+//   - result is the decrypted data, a multiple of the AES block length (16
+//     bytes); it includes any padding added before encryption
 //   - err
-func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) (string, error) {
+//
+// The data encryption key derived from currentKey is cleared before returning;
+// currentKey is not modified and stays the caller's to clear. The result
+// belongs to the caller, who should clear it once the data is no longer needed.
+func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if action != pkg.ActionRequest && action != pkg.ActionResponse {
@@ -407,8 +457,9 @@ func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string)
 
 	dataKey, err := generateDerivationKey(params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	defer wipe(dataKey)
 
 	if iv == nil {
 		// default null
@@ -432,11 +483,11 @@ func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string)
 
 	block, err := aes.NewCipher(dataKey)
 	if err != nil {
-		return "", fmt.Errorf("making cipher from datakey: %w", err)
+		return nil, fmt.Errorf("making cipher from datakey: %w", err)
 	}
 
 	mode := cipher.NewCBCDecrypter(block, iv)
 	mode.CryptBlocks(plaintext, serializePlaintext)
 
-	return string(plaintext), nil
+	return plaintext, nil
 }

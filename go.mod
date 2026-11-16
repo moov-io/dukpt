@@ -1,4 +1,4 @@
-module github.com/moov-io/dukpt
+module github.com/moov-io/dukpt/v2
 
 go 1.26.0
 

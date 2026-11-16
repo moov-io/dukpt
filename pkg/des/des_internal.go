@@ -4,8 +4,15 @@ import (
 	"bytes"
 	"crypto/des" //nolint:gosec
 	"fmt"
-	"github.com/moov-io/dukpt/encryption"
+
+	"github.com/moov-io/dukpt/v2/encryption"
+	"github.com/moov-io/dukpt/v2/internal/memzero"
 )
+
+// wipe clears a buffer that held key material, a clear PIN block, or data
+// decrypted with a key. It is a variable only so tests can observe which
+// buffers the package clears.
+var wipe = memzero.Bytes
 
 const (
 	keyLen       = 16
@@ -55,7 +62,12 @@ func serializeKeyWithHexadecimal(key []byte) {
 	key[11] ^= 0xC0
 }
 
-// Non-reversible Key Generation Process
+// Non-reversible Key Generation Process (ANSI X9.24-1:2009 A.2)
+//
+// keyBytes is the Key Register and is modified in place (step 4). The returned
+// key belongs to the caller, who must clear it. Both crypto registers hold
+// key-derived values at every step, so each is cleared when replaced and again
+// on return, including on an error.
 func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 	if len(keyBytes) < keyLen {
 		return nil, fmt.Errorf("key register length must be at least %d bytes", keyLen)
@@ -64,9 +76,13 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 		return nil, fmt.Errorf("ksn length must be at least %d bytes", des.BlockSize)
 	}
 
-	var err error
 	cryptoReg1 := make([]byte, des.BlockSize)
 	cryptoReg2 := make([]byte, des.BlockSize)
+	// A closure, so it clears whichever buffers the registers hold on return.
+	defer func() {
+		wipe(cryptoReg1)
+		wipe(cryptoReg2)
+	}()
 
 	// The 64 right-most bits of the Key Serial Number Register is transferred into Crypto Register-1
 	copy(cryptoReg1, ksnBytes[len(ksnBytes)-des.BlockSize:])
@@ -82,10 +98,12 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 2) Crypto Register-2 DEA-encrypted using, as the key, the left half of the Key Register goes to Crypto Register-2
 	cipher1, _ := encryption.NewDesECB(leftKey)
-	cryptoReg2, err = cipher1.Encrypt(cryptoReg2)
+	encrypted, err := cipher1.Encrypt(cryptoReg2)
+	wipe(cryptoReg2)
 	if err != nil {
 		return nil, err
 	}
+	cryptoReg2 = encrypted
 
 	// 3) Crypto Register-2 XORed with the right half of the Key Register goes to Crypto Register-2
 	for index := range cryptoReg2 {
@@ -107,17 +125,24 @@ func makeNonReversibleKey(ksnBytes, keyBytes []byte) ([]byte, error) {
 
 	// 6) Crypto Register-1 DEA-encrypted using, as the key, the left half of the Key Register goes to Crypto Register-1
 	cipher2, _ := encryption.NewDesECB(leftKey)
-	cryptoReg1, err = cipher2.Encrypt(cryptoReg1)
+	encrypted, err = cipher2.Encrypt(cryptoReg1)
+	wipe(cryptoReg1)
 	if err != nil {
 		return nil, err
 	}
+	cryptoReg1 = encrypted
 
 	// 7) Crypto Register-1 XORed with the right half of the Key Register goes to Crypto Register-1
 	for index := range cryptoReg1 {
 		cryptoReg1[index] = cryptoReg1[index] ^ rightKey[index]
 	}
 
-	return append(cryptoReg1, cryptoReg2...), nil
+	// A new 16-byte slice: appending to cryptoReg1 would reallocate it anyway,
+	// and the registers are cleared by the deferred wipe.
+	nextKey := make([]byte, 0, keyLen)
+	nextKey = append(nextKey, cryptoReg1...)
+	nextKey = append(nextKey, cryptoReg2...)
+	return nextKey, nil
 }
 
 func encryptPinblock(currentKey, pinblock []byte) ([]byte, error) {
@@ -126,6 +151,7 @@ func encryptPinblock(currentKey, pinblock []byte) ([]byte, error) {
 	}
 
 	pinKey := make([]byte, keyLen)
+	defer wipe(pinKey)
 	copy(pinKey, currentKey)
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1
@@ -143,6 +169,7 @@ func decryptPinblock(currentKey, ciphertext []byte) ([]byte, error) {
 	}
 
 	pinKey := make([]byte, keyLen)
+	defer wipe(pinKey)
 	copy(pinKey, currentKey)
 
 	// ANSI X9.24-1:2009 A.4.1, table A-1

@@ -14,8 +14,8 @@ import (
 	"github.com/moov-io/base/admin"
 	"github.com/moov-io/base/http/bind"
 	"github.com/moov-io/base/log"
-	"github.com/moov-io/dukpt"
-	"github.com/moov-io/dukpt/pkg/server"
+	"github.com/moov-io/dukpt/v2"
+	"github.com/moov-io/dukpt/v2/pkg/server"
 
 	kitlog "github.com/go-kit/log"
 )

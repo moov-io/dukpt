@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/moov-io/dukpt"
-	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/server"
+	"github.com/moov-io/dukpt/v2"
+	"github.com/moov-io/dukpt/v2/pkg"
+	"github.com/moov-io/dukpt/v2/pkg/server"
 )
 
 var (

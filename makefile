@@ -13,9 +13,9 @@ endif
 
 dist: clean
 ifeq ($(OS),Windows_NT)
-	CGO_ENABLED=1 GOOS=windows go build -o bin/dukptcli.exe github.com/moov-io/dukpt/cmd/dukptcli
+	CGO_ENABLED=1 GOOS=windows go build -o bin/dukptcli.exe github.com/moov-io/dukpt/v2/cmd/dukptcli
 else
-	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/dukptcli-$(PLATFORM)-amd64 github.com/moov-io/dukpt/cmd/dukptcli
+	CGO_ENABLED=1 GOOS=$(PLATFORM) go build -o bin/dukptcli-$(PLATFORM)-amd64 github.com/moov-io/dukpt/v2/cmd/dukptcli
 endif
 
 .PHONY: clean
