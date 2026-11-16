@@ -143,20 +143,19 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - pin is not formatted pin string
-//   - pan is not formatted pan string
+//   - pin is the PIN as ASCII decimal digits, 4 to 12 of them
+//   - pan is the PAN as ASCII decimal digits, 12 to 19 of them
 //   - key type is AES128, AES192, AES256
 //
 // Return Params:
-//   - result is cipher text
+//   - result is the 16-byte enciphered ISO-4 PIN block
 //   - err
 //
-// The PIN encryption key derived from currentKey is cleared before returning;
-// currentKey is not modified and stays the caller's to clear. pin and pan are
-// strings, which cannot be cleared, and the PIN block is formatted as a hex
-// string by github.com/moov-io/pinblock, so copies of the PIN remain in memory
-// until the garbage collector reuses it.
-func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte, error) {
+// The PIN encryption key derived from currentKey, and every intermediate of
+// the PIN block, are cleared before returning. currentKey, pin and pan are not
+// modified and stay the caller's to clear. No copy of the PIN is ever made as a
+// string.
+func EncryptPin(currentKey, ksn, pin, pan []byte, keyType string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err
 	}
@@ -177,13 +176,7 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 		return nil, err
 	}
 
-	formatter := formats.NewISO4(cipher)
-	blockstr, err := formatter.Encode(pin, pan)
-	if err != nil {
-		return nil, err
-	}
-
-	return pkg.HexDecode(blockstr), nil
+	return formats.NewISO4(cipher).Encode(pin, pan)
 }
 
 // Decrypt PIN block using DUKPT transaction key
@@ -195,20 +188,21 @@ func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - pin is not formatted pin string
-//   - pan is not formatted pan string
+//   - ciphertext is the 16-byte enciphered ISO-4 PIN block
+//   - pan is the PAN as ASCII decimal digits, 12 to 19 of them
 //   - key type is AES128, AES192, AES256
 //
 // Return Params:
-//   - result is plain text
+//   - result is the PIN as ASCII decimal digits
 //   - err
 //
-// The PIN encryption key derived from currentKey is cleared before returning;
-// currentKey is not modified and stays the caller's to clear. The PIN is
-// returned as a string, which cannot be cleared.
-func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) (string, error) {
+// The PIN encryption key derived from currentKey, and every intermediate of
+// the PIN block, are cleared before returning. The returned PIN belongs to the
+// caller, who should clear it once it is no longer needed. No copy of the PIN
+// is ever made as a string.
+func DecryptPin(currentKey, ksn, ciphertext, pan []byte, keyType string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	pinKey, err := generateDerivationKey(derivationParams{
@@ -218,22 +212,16 @@ func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) 
 		CurrentKey: currentKey,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer wipe(pinKey)
 
 	cipher, err := encryption.NewAesECB(pinKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	formatter := formats.NewISO4(cipher)
-	blockstr, err := formatter.Decode(pkg.HexEncode(ciphertext), pan)
-	if err != nil {
-		return "", err
-	}
-
-	return blockstr, nil
+	return formats.NewISO4(cipher).Decode(ciphertext, pan)
 }
 
 // Generate AES-CMAC for transaction request using transaction key

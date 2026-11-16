@@ -80,8 +80,8 @@ func TestDerivationOfInitialKey(t *testing.T) {
 
 func TestDeriveCurrentTransactionKey(t *testing.T) {
 	bdk := pkg.HexDecode(("0123456789ABCDEFFEDCBA9876543210"))
-	pin := "1234"
-	pan := "4012345678909"
+	pin := []byte("1234")
+	pan := []byte("4012345678909")
 	FormatVersion := "ISO-0"
 	data := []byte("4012345678909D987")
 

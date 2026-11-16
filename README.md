@@ -58,8 +58,8 @@ Moov dukpt project supported general utility functions for managing transaction 
 ```
     func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error)
     func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error)
-    func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, error)
-    func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (string, error)
+    func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error)
+    func DecryptPin(currentKey, ciphertext, pan []byte, format string) ([]byte, error)
     func GenerateMac(currentKey, message []byte, action string) ([]byte, error)
     func EncryptData(currentKey, iv, plaintext []byte, action string) ([]byte, error)
     func DecryptData(currentKey, ciphertext, iv []byte, action string) ([]byte, error)
@@ -69,8 +69,8 @@ Moov dukpt project supported general utility functions for managing transaction 
 ```
     func DerivationOfInitialKey(bdk, kid []byte) ([]byte, error)
     func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error)
-    func EncryptPin(currentKey, ksn []byte, pin, pan string, keyType string) ([]byte, error)
-    func DecryptPin(currentKey, ksn, ciphertext []byte, pan string, keyType string) (string, error)
+    func EncryptPin(currentKey, ksn, pin, pan []byte, keyType string) ([]byte, error)
+    func DecryptPin(currentKey, ksn, ciphertext, pan []byte, keyType string) ([]byte, error)
     func GenerateCMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error)
     func GenerateHMAC(currentKey, ksn, message []byte, keyType string, action string) ([]byte, error)
     func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) ([]byte, error)
@@ -175,10 +175,11 @@ error from this package.
   clears its own intermediates: each derivation step's key, the working keys for PIN, MAC
   and data encryption, and padded copies of data. It cannot clear the key schedules held
   inside `crypto/aes`, `crypto/des`, `crypto/hmac` and the CMAC implementation, nor any
-  string: a PIN, a PAN, or a key in hex. The PIN functions take and return strings because
-  `github.com/moov-io/pinblock` formats PIN blocks as strings, and `pkg.HexEncode` and
-  `pkg.HexDecode`, the HTTP server and the CLI handle keys in hex, so prefer the `[]byte`
-  functions in `pkg/aes` and `pkg/des` when handling live keys.
+  string. The library functions take and return PINs, PANs, keys and data as `[]byte`
+  and never make a string of them, and the PIN returned by `DecryptPin` is the caller's
+  to clear. `pkg.HexEncode` and `pkg.HexDecode`, the HTTP server and the CLI handle keys
+  and PINs as text, so use the `pkg/aes` and `pkg/des` functions directly for live keys
+  and PINs.
 - **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial
   Key ID) for AES, so passing either the ID or a full 12-byte KSN gives the same key.
 

@@ -134,7 +134,7 @@ func TestDeriveCurrentTransactionKey_ClearsIntermediates(t *testing.T) {
 }
 
 func TestWorkingKeys_AreCleared(t *testing.T) {
-	pin, pan := "1234", "4012345678909"
+	pin, pan := []byte("1234"), []byte("4012345678909")
 	message := []byte("4012345678909D987")
 
 	clearPinBlock := func() []byte {
@@ -142,7 +142,7 @@ func TestWorkingKeys_AreCleared(t *testing.T) {
 		require.NoError(t, err)
 		block, err := f.Encode(pin, pan)
 		require.NoError(t, err)
-		return pkg.HexDecode(block)
+		return block
 	}()
 
 	// The TDEA data key is the data variant encrypted under itself, in halves.
@@ -245,4 +245,24 @@ func TestDecryptData_ReturnsCallerOwnedBytes(t *testing.T) {
 	again, err := DecryptData(wipeTestTK, encrypted, nil, pkg.ActionRequest)
 	require.NoError(t, err)
 	require.Equal(t, plaintext, again[:len(plaintext)])
+}
+
+// The PIN functions take and return []byte: inputs are not modified and the
+// PIN returned is the caller's.
+func TestPinFunctions_ByteOwnership(t *testing.T) {
+	pin, pan := []byte("1234"), []byte("4012345678909")
+
+	encrypted, err := EncryptPin(wipeTestTK, pin, pan, "ISO-0")
+	require.NoError(t, err)
+	require.Len(t, encrypted, 8)
+	require.Equal(t, []byte("1234"), pin)
+	require.Equal(t, []byte("4012345678909"), pan)
+
+	decrypted, err := DecryptPin(wipeTestTK, encrypted, pan, "ISO-0")
+	require.NoError(t, err)
+	require.Equal(t, pin, decrypted)
+	clear(decrypted)
+	again, err := DecryptPin(wipeTestTK, encrypted, pan, "ISO-0")
+	require.NoError(t, err)
+	require.Equal(t, pin, again)
 }

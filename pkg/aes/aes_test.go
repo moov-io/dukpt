@@ -108,8 +108,8 @@ var InitialSequence = []SequenceItem{
 //
 //	Table 4 - BDK and Associated Data for Test Vectors
 func TestAES128(t *testing.T) {
-	pin := "1234"
-	pan := "4111111111111111"
+	pin := []byte("1234")
+	pan := []byte("4111111111111111")
 	macData := []byte("4012345678909D987")
 
 	bdk := []byte{0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1, 0xF1}

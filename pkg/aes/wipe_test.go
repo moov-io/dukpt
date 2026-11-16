@@ -137,7 +137,7 @@ func TestWorkingKeys_AreCleared(t *testing.T) {
 
 	encrypted, err := EncryptData(tk, ksn, nil, message, KeyAES256Type, pkg.ActionRequest)
 	require.NoError(t, err)
-	encryptedPin, err := EncryptPin(tk, ksn, "1234", "4111111111111111", KeyAES256Type)
+	encryptedPin, err := EncryptPin(tk, ksn, []byte("1234"), []byte("4111111111111111"), KeyAES256Type)
 	require.NoError(t, err)
 
 	cases := []struct {
@@ -146,11 +146,11 @@ func TestWorkingKeys_AreCleared(t *testing.T) {
 		call func() error
 	}{
 		{"PIN key (EncryptPin)", workingKey(usageForPinEncryption, KeyAES256Type), func() error {
-			_, err := EncryptPin(tk, ksn, "1234", "4111111111111111", KeyAES256Type)
+			_, err := EncryptPin(tk, ksn, []byte("1234"), []byte("4111111111111111"), KeyAES256Type)
 			return err
 		}},
 		{"PIN key (DecryptPin)", workingKey(usageForPinEncryption, KeyAES256Type), func() error {
-			_, err := DecryptPin(tk, ksn, encryptedPin, "4111111111111111", KeyAES256Type)
+			_, err := DecryptPin(tk, ksn, encryptedPin, []byte("4111111111111111"), KeyAES256Type)
 			return err
 		}},
 		{"CMAC request key", workingKey(usageForMessageGeneration, KeyAES256Type), func() error {
@@ -218,4 +218,26 @@ func TestDecryptData_ReturnsCallerOwnedBytes(t *testing.T) {
 	again, err := DecryptData(tk, ksn, encrypted, nil, KeyAES256Type, pkg.ActionRequest)
 	require.NoError(t, err)
 	require.Equal(t, plaintext, again[:len(plaintext)])
+}
+
+// The PIN functions take and return []byte: inputs are not modified and the
+// PIN returned is the caller's.
+func TestPinFunctions_ByteOwnership(t *testing.T) {
+	tk := pkg.HexDecode("4F21B565BAD9835E112B6465635EAE44")
+	ksn := pkg.HexDecode("123456789012345600000001")
+	pin, pan := []byte("1234"), []byte("4111111111111111")
+
+	encrypted, err := EncryptPin(tk, ksn, pin, pan, KeyAES128Type)
+	require.NoError(t, err)
+	require.Len(t, encrypted, 16)
+	require.Equal(t, []byte("1234"), pin)
+	require.Equal(t, []byte("4111111111111111"), pan)
+
+	decrypted, err := DecryptPin(tk, ksn, encrypted, pan, KeyAES128Type)
+	require.NoError(t, err)
+	require.Equal(t, pin, decrypted)
+	clear(decrypted)
+	again, err := DecryptPin(tk, ksn, encrypted, pan, KeyAES128Type)
+	require.NoError(t, err)
+	require.Equal(t, pin, again)
 }

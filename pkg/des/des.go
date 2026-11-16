@@ -140,32 +140,28 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 //
 // Params:
 //   - current key is 16 bytes transaction key
-//   - pin is not formatted pin string
-//   - pan is not formatted pan string
+//   - pin is the PIN as ASCII decimal digits
+//   - pan is the PAN as ASCII decimal digits (ignored by formats that do not use it)
 //   - format is pinblock format
-//     ("ISO-0", "ISO-1", "ISO-2", "ISO-3", "ISO-4", "ANSI", "ECI1", "ECI2", "ECI3", "ECI4", "VISA1", "VISA2", "VISA3", "VISA4")
+//     ("ISO-0", "ISO-1", "ISO-2", "ISO-3", "ANSI", "ECI1", "ECI2", "ECI3", "ECI4", "VISA1", "VISA2", "VISA3", "VISA4")
 //
 // Return Params:
-//   - result is cipher text
+//   - result is the 8-byte enciphered PIN block
 //   - err
 //
 // The PIN encryption key variant and the clear PIN block are cleared before
-// returning; currentKey is not modified and stays the caller's to clear. pin
-// and pan are strings, and github.com/moov-io/pinblock formats the PIN block as
-// a hex string, so copies of the PIN remain in memory until the garbage
-// collector reuses it.
-func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, error) {
+// returning. currentKey, pin and pan are not modified and stay the caller's to
+// clear. No copy of the PIN is ever made as a string.
+func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error) {
 	formatter, err := formats.NewFormatter(strings.ToUpper(format))
 	if err != nil {
 		return nil, err
 	}
 
-	blockstr, err := formatter.Encode(pin, pan)
+	pinBlock, err := formatter.Encode(pin, pan)
 	if err != nil {
 		return nil, err
 	}
-
-	pinBlock := pkg.HexDecode(blockstr)
 	defer wipe(pinBlock)
 	return encryptPinblock(currentKey, pinBlock)
 }
@@ -179,36 +175,30 @@ func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, erro
 // Params:
 //   - current key is 16 bytes transaction key
 //   - cipher text is encrypted text transformed from plaintext using an encryption algorithm
-//   - pan is not formatted pan string
+//   - pan is the PAN as ASCII decimal digits (ignored by formats that do not use it)
 //   - format is pinblock format
-//     ("ISO-0", "ISO-1", "ISO-2", "ISO-3", "ISO-4", "ANSI", "ECI1", "ECI2", "ECI3", "ECI4", "VISA1", "VISA2", "VISA3", "VISA4")
+//     ("ISO-0", "ISO-1", "ISO-2", "ISO-3", "ANSI", "ECI1", "ECI2", "ECI3", "ECI4", "VISA1", "VISA2", "VISA3", "VISA4")
 //
 // Return Params:
-//   - result is pin string (plain text)
+//   - result is the PIN as ASCII decimal digits
 //   - err
 //
 // The PIN encryption key variant and the clear PIN block are cleared before
-// returning; currentKey is not modified and stays the caller's to clear. The
-// PIN block is decoded through a hex string and the PIN is returned as a
-// string, neither of which can be cleared.
-func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (string, error) {
+// returning. The returned PIN belongs to the caller, who should clear it once
+// it is no longer needed. No copy of the PIN is ever made as a string.
+func DecryptPin(currentKey, ciphertext, pan []byte, format string) ([]byte, error) {
 	formatter, err := formats.NewFormatter(strings.ToUpper(format))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	pinBlock, err := decryptPinblock(currentKey, ciphertext)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer wipe(pinBlock)
 
-	pinstr, err := formatter.Decode(pkg.HexEncode(pinBlock), pan)
-	if err != nil {
-		return "", err
-	}
-
-	return pinstr, nil
+	return formatter.Decode(pinBlock, pan)
 }
 
 // Generate MAC using DUKPT transaction key

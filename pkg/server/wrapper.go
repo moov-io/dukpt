@@ -71,9 +71,9 @@ func EncryptPin(params UnifiedParams) (string, error) {
 	var err error
 
 	if params.Algorithm == pkg.AlgorithmAes {
-		buf, err = aes.EncryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), params.PIN, params.PAN, params.AlgorithmKey)
+		buf, err = aes.EncryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), []byte(params.PIN), []byte(params.PAN), params.AlgorithmKey)
 	} else {
-		buf, err = des.EncryptPin(pkg.HexDecode(params.TK), params.PIN, params.PAN, params.Format)
+		buf, err = des.EncryptPin(pkg.HexDecode(params.TK), []byte(params.PIN), []byte(params.PAN), params.Format)
 	}
 
 	if err != nil {
@@ -83,19 +83,19 @@ func EncryptPin(params UnifiedParams) (string, error) {
 }
 
 func DecryptPin(params UnifiedParams) (string, error) {
-	var buf string
+	var buf []byte
 	var err error
 
 	if params.Algorithm == pkg.AlgorithmAes {
-		buf, err = aes.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.PIN), params.PAN, params.AlgorithmKey)
+		buf, err = aes.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.KSN), pkg.HexDecode(params.PIN), []byte(params.PAN), params.AlgorithmKey)
 	} else {
-		buf, err = des.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.PIN), params.PAN, params.Format)
+		buf, err = des.DecryptPin(pkg.HexDecode(params.TK), pkg.HexDecode(params.PIN), []byte(params.PAN), params.Format)
 	}
 
 	if err != nil {
 		return "", err
 	}
-	return buf, nil
+	return string(buf), nil
 }
 
 func GenerateMac(params UnifiedParams) (string, error) {

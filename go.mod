@@ -10,7 +10,7 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/gorilla/mux v1.8.1
 	github.com/moov-io/base v0.68.2
-	github.com/moov-io/pinblock v0.1.0
+	github.com/moov-io/pinblock v0.1.1-0.20261116224438-ebd194783319
 	github.com/stretchr/testify v1.12.1
 )
 
