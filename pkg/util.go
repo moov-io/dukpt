@@ -20,7 +20,8 @@ const (
 //
 // When data is a key, note that a Go string cannot be cleared: the hex form
 // stays in memory until the garbage collector reuses it. The returned slice is
-// the caller's, and the caller should clear it once the key is no longer needed.
+// the caller's, and the caller should clear it with dukpt.Clear once the key is
+// no longer needed.
 func HexDecode(data string) []byte {
 	if len(data) == 0 {
 		return nil
