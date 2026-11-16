@@ -7,3 +7,11 @@ pkg/aes/aes_test.go:generic-api-key:77
 pkg/aes/aes_test.go:generic-api-key:87
 pkg/aes/aes_test.go:generic-api-key:97
 pkg/server/service_test.go:generic-api-key:20
+pkg/aes/aes192_test.go:generic-api-key:28
+pkg/aes/aes192_test.go:generic-api-key:31
+pkg/aes/aes192_test.go:generic-api-key:34
+pkg/aes/aes192_test.go:generic-api-key:37
+pkg/aes/aes192_test.go:generic-api-key:40
+pkg/aes/aes192_test.go:generic-api-key:43
+pkg/aes/aes192_test.go:generic-api-key:46
+pkg/aes/aes192_test.go:generic-api-key:49
