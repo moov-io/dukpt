@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/moov-io/dukpt/encryption"
+	"github.com/moov-io/dukpt/internal/cbc"
 	"github.com/moov-io/dukpt/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
@@ -299,7 +300,8 @@ func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 //
 // Params:
 //   - current key is 16 bytes transaction key
-//   - iv is initial vector
+//   - iv is the initial vector: nil means all zeros, a shorter one is padded
+//     with zeros and a longer one truncated to one block; it is not modified
 //   - plain text is the data to encrypt, zero-padded to a multiple of 8 bytes
 //   - action is request or response action
 //
@@ -360,13 +362,8 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 	ciphertext := make([]byte, len(serializePlaintext))
 	// A.4.1 Variants of the Current Key
 	// 	Encryption of the data should use T-DEA in CBC mode.
-	if iv == nil {
-		// default null
-		iv = make([]byte, desBlockLen)
-	}
-	if len(iv) < desBlockLen {
-		iv = append(iv, make([]byte, desBlockLen-len(iv))...)
-	}
+	// A fresh block: padding iv in place would write into the caller's array.
+	iv = cbc.IV(iv, desBlockLen)
 
 	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode := cipher.NewCBCEncrypter(dataCipher.GetBlock(), iv)
@@ -386,7 +383,8 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 // Params:
 //   - current key is 16 bytes transaction key
 //   - cipher text is encrypted text
-//   - iv is initial vector
+//   - iv is the initial vector: nil means all zeros, a shorter one is padded
+//     with zeros and a longer one truncated to one block; it is not modified
 //   - action is request or response action
 //
 // Return Params:
@@ -448,14 +446,8 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 	defer wipe(plaintext)
 	// A.4.1 Variants of the Current Key
 	// 	Encryption of the data should use T-DEA in CBC mode.
-	if iv == nil {
-		// default null
-		iv = make([]byte, desBlockLen)
-	}
-
-	if len(iv) > desBlockLen {
-		iv = iv[:desBlockLen]
-	}
+	// A fresh block of exactly one block length; a short iv used to panic here.
+	iv = cbc.IV(iv, desBlockLen)
 
 	// codeql[go/weak-cryptographic-algorithm] TDEA/CBC required by ANSI X9.24-1 DUKPT
 	mode := cipher.NewCBCDecrypter(dataCipher.GetBlock(), iv)
