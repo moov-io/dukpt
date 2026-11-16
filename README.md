@@ -138,6 +138,7 @@ Data (pin, mac, normal data) is encrypted/decrypted using generated initial key 
     if err != nil {
         return err
     }
+    defer dukpt.Clear(decPinblock)
 ```
 
 ### What the caller must do
@@ -180,7 +181,7 @@ error from this package.
   inside `crypto/aes`, `crypto/des`, `crypto/hmac` and the CMAC implementation, nor any
   string. The library functions take and return PINs, PANs, keys and data as `[]byte`
   and never make a string of them, and the PIN returned by `DecryptPin` is the caller's
-  to clear. `pkg.HexEncode` and `pkg.HexDecode`, the HTTP server and the CLI handle keys
+  to clear with `dukpt.Clear`. `pkg.HexEncode` and `pkg.HexDecode`, the HTTP server and the CLI handle keys
   and PINs as text, so use the `pkg/aes` and `pkg/des` functions directly for live keys
   and PINs.
 - **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial

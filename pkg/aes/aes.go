@@ -198,8 +198,8 @@ func EncryptPin(currentKey, ksn, pin, pan []byte, keyType string) ([]byte, error
 //
 // The PIN encryption key derived from currentKey, and every intermediate of
 // the PIN block, are cleared before returning. The returned PIN belongs to the
-// caller, who should clear it once it is no longer needed. No copy of the PIN
-// is ever made as a string.
+// caller, who should clear it with dukpt.Clear once it is no longer needed. No
+// copy of the PIN is ever made as a string.
 func DecryptPin(currentKey, ksn, ciphertext, pan []byte, keyType string) ([]byte, error) {
 	if err := checkWorkingKeyLength(len(currentKey), keyType); err != nil {
 		return nil, err

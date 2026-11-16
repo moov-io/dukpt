@@ -184,8 +184,9 @@ func EncryptPin(currentKey, pin, pan []byte, format string) ([]byte, error) {
 //   - err
 //
 // The PIN encryption key variant and the clear PIN block are cleared before
-// returning. The returned PIN belongs to the caller, who should clear it once
-// it is no longer needed. No copy of the PIN is ever made as a string.
+// returning. The returned PIN belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. No copy of the PIN is ever made as a
+// string.
 func DecryptPin(currentKey, ciphertext, pan []byte, format string) ([]byte, error) {
 	formatter, err := formats.NewFormatter(strings.ToUpper(format))
 	if err != nil {
