@@ -10,6 +10,7 @@ import (
 
 	"github.com/chmike/cmac-go"
 	"github.com/moov-io/dukpt/v2/encryption"
+	"github.com/moov-io/dukpt/v2/internal/cbc"
 	"github.com/moov-io/dukpt/v2/pkg"
 	"github.com/moov-io/pinblock/formats"
 )
@@ -349,7 +350,8 @@ func GenerateHMAC(currentKey, ksn, message []byte, keyType string, action string
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - iv is initial vector
+//   - iv is the initial vector: nil means all zeros, a shorter one is padded
+//     with zeros and a longer one truncated to one block; it is not modified
 //   - plaintext is the data to encrypt, zero-padded to a multiple of 16 bytes
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
@@ -386,13 +388,8 @@ func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) 
 	}
 	defer wipe(dataKey)
 
-	if iv == nil {
-		// default null
-		iv = make([]byte, aes.BlockSize)
-	}
-	if len(iv) < aes.BlockSize {
-		iv = append(iv, make([]byte, aes.BlockSize-len(iv))...)
-	}
+	// A fresh block: padding iv in place would write into the caller's array.
+	iv = cbc.IV(iv, aes.BlockSize)
 
 	repeatCnt := len(plaintext) / aes.BlockSize
 	if len(plaintext)%aes.BlockSize > 0 {
@@ -423,7 +420,8 @@ func EncryptData(currentKey, ksn, iv, plaintext []byte, keyType, action string) 
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
-//   - iv is initial vector
+//   - iv is the initial vector: nil means all zeros, a shorter one is padded
+//     with zeros and a longer one truncated to one block; it is not modified
 //   - cipher text is encrypted data
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
@@ -461,16 +459,8 @@ func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string)
 	}
 	defer wipe(dataKey)
 
-	if iv == nil {
-		// default null
-		iv = make([]byte, aes.BlockSize)
-	}
-
-	if len(iv) < aes.BlockSize {
-		iv = append(iv, make([]byte, aes.BlockSize-len(iv))...)
-	} else if len(iv) > aes.BlockSize {
-		iv = iv[:aes.BlockSize]
-	}
+	// A fresh block: padding iv in place would write into the caller's array.
+	iv = cbc.IV(iv, aes.BlockSize)
 
 	repeatCnt := len(ciphertext) / aes.BlockSize
 	if len(ciphertext)%aes.BlockSize > 0 {
