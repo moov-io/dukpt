@@ -169,6 +169,16 @@ error from this package.
 - **Keep the previous KSN if you need it.** Copy it before calling
   `GenerateNextAesKsn` or `GenerateNextDesKsn`; in v1.0.0 both write the new counter into
   the slice passed in.
+- **Clear the keys you hold.** Every key the library returns (initial key, transaction
+  key) belongs to the caller, who should clear it (for example with `clear(key)`) as soon
+  as it is no longer needed. The library clears its own intermediates: each derivation
+  step's key, the working keys for PIN, MAC and data encryption, and the byte copies it
+  makes of data. It cannot clear the key schedules held inside `crypto/aes`, `crypto/des`,
+  `crypto/hmac` and the CMAC implementation, nor any string. In v1 the data and MAC
+  functions take their data as a `string` and `DecryptData` returns one, and the PIN
+  functions take and return strings because `github.com/moov-io/pinblock` formats PIN
+  blocks as strings, so those values cannot be cleared. `github.com/moov-io/dukpt/v2`
+  takes and returns data and MAC messages as `[]byte`; prefer it when handling live data.
 - **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial
   Key ID) for AES, so passing either the ID or a full 12-byte KSN gives the same key.
 
