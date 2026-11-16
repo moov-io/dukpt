@@ -109,6 +109,7 @@ Second step is to generate transaction key in from generated initial key and key
     if err != nil {
         return err
     }
+    defer dukpt.Clear(transactionKey) // import "github.com/moov-io/dukpt/v2"
 ```
 
 Data (pin, mac, normal data) is encrypted/decrypted using generated initial key and transaction key
@@ -171,7 +172,9 @@ error from this package.
   the slice passed in.
 - **Clear the keys and data you hold.** Every key the library returns (initial key,
   transaction key) and the result of `DecryptData` belong to the caller, who should clear
-  them (for example with `clear(key)`) as soon as they are no longer needed. The library
+  them with `dukpt.Clear(key)` as soon as they are no longer needed. Prefer it to the
+  `clear` builtin: a `clear` with no later read is a dead store the compiler may remove,
+  while `dukpt.Clear` always writes. The library
   clears its own intermediates: each derivation step's key, the working keys for PIN, MAC
   and data encryption, and padded copies of data. It cannot clear the key schedules held
   inside `crypto/aes`, `crypto/des`, `crypto/hmac` and the CMAC implementation, nor any
