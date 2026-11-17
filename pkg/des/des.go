@@ -26,6 +26,11 @@ import (
 // Return Params:
 //   - reulst is 16 bytes initial key
 //   - err
+//
+// The returned Initial Key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. bdk is not
+// modified; the BDK variant and both halves of the Initial Key built along the
+// way are cleared before returning.
 func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	if len(bdk) != keyLen {
 		return nil, fmt.Errorf("base derivative key length must be %d bytes", keyLen)
@@ -39,8 +44,10 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(leftHalf)
 
 	bdkVariant := make([]byte, len(bdk))
+	defer wipe(bdkVariant)
 	copy(bdkVariant, bdk)
 	serializeKeyWithHexadecimal(bdkVariant)
 
@@ -49,8 +56,12 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(rightHalf)
 
-	return append(leftHalf, rightHalf...), nil
+	initialKey := make([]byte, 0, keyLen)
+	initialKey = append(initialKey, leftHalf...)
+	initialKey = append(initialKey, rightHalf...)
+	return initialKey, nil
 }
 
 // Derive DUKPT transaction key (current transaction key) from Initial Key and Key Serial Number
@@ -65,8 +76,13 @@ func DerivationOfInitialKey(bdk, ksn []byte) ([]byte, error) {
 // Return Params:
 //   - result is 16 bytes transaction key
 //   - err
+//
+// The returned transaction key belongs to the caller, who should clear it with
+// dukpt.Clear once it is no longer needed. ik is not modified. The Key Register and every
+// intermediate key are cleared before returning, including on an error.
 func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 	keyBytes := make([]byte, keyLen)
+	defer wipe(keyBytes)
 	copy(keyBytes, ik)
 	ksnBytes := make([]byte, keySerialLen)
 	serializedKsn := serializeKeySerialNumber(ksn)
@@ -102,11 +118,12 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 			ksnBytes[keySerialLen-1-i] |= shiftReg[i]
 		}
 
-		if nextKey, err := makeNonReversibleKey(ksnBytes, keyBytes); err != nil {
+		nextKey, err := makeNonReversibleKey(ksnBytes, keyBytes)
+		if err != nil {
 			return nil, err
-		} else {
-			copy(keyBytes, nextKey)
 		}
+		copy(keyBytes, nextKey)
+		wipe(nextKey)
 	}
 
 	transactionKey := make([]byte, keyLen)
@@ -131,6 +148,12 @@ func DeriveCurrentTransactionKey(ik, ksn []byte) ([]byte, error) {
 // Return Params:
 //   - result is cipher text
 //   - err
+//
+// The PIN encryption key variant and the clear PIN block are cleared before
+// returning; currentKey is not modified and stays the caller's to clear. pin
+// and pan are strings, and github.com/moov-io/pinblock formats the PIN block as
+// a hex string, so copies of the PIN remain in memory until the garbage
+// collector reuses it.
 func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, error) {
 	formatter, err := formats.NewFormatter(strings.ToUpper(format))
 	if err != nil {
@@ -142,7 +165,9 @@ func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, erro
 		return nil, err
 	}
 
-	return encryptPinblock(currentKey, pkg.HexDecode(blockstr))
+	pinBlock := pkg.HexDecode(blockstr)
+	defer wipe(pinBlock)
+	return encryptPinblock(currentKey, pinBlock)
 }
 
 // Decrypt PIN block using DUKPT transaction key
@@ -161,6 +186,11 @@ func EncryptPin(currentKey []byte, pin, pan string, format string) ([]byte, erro
 // Return Params:
 //   - result is pin string (plain text)
 //   - err
+//
+// The PIN encryption key variant and the clear PIN block are cleared before
+// returning; currentKey is not modified and stays the caller's to clear. The
+// PIN block is decoded through a hex string and the PIN is returned as a
+// string, neither of which can be cleared.
 func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (string, error) {
 	formatter, err := formats.NewFormatter(strings.ToUpper(format))
 	if err != nil {
@@ -171,6 +201,7 @@ func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (strin
 	if err != nil {
 		return "", err
 	}
+	defer wipe(pinBlock)
 
 	pinstr, err := formatter.Decode(pkg.HexEncode(pinBlock), pan)
 	if err != nil {
@@ -194,8 +225,13 @@ func DecryptPin(currentKey, ciphertext []byte, pan string, format string) (strin
 // Return Params:
 //   - result is generated mac (use the first 4 bytes of this result)
 //   - err
+//
+// The MAC key variant and the zero-padded copy of plainText are cleared before
+// returning; currentKey is not modified and stays the caller's to clear.
+// plainText is a string, which cannot be cleared.
 func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 	dataKey := make([]byte, keyLen)
+	defer wipe(dataKey)
 	copy(dataKey, currentKey)
 
 	if action != pkg.ActionRequest && action != pkg.ActionResponse {
@@ -214,13 +250,13 @@ func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 	leftKey := dataKey[:desBlockLen]
 	rightKey := dataKey[desBlockLen:]
 
-	plainTextBytes := []byte(plainText)
-	repeatCnt := len(plainTextBytes) / desBlockLen
-	if len(plainTextBytes)%desBlockLen > 0 {
+	repeatCnt := len(plainText) / desBlockLen
+	if len(plainText)%desBlockLen > 0 {
 		repeatCnt++
 	}
 	serializePlaintext := make([]byte, repeatCnt*desBlockLen)
-	copy(serializePlaintext, plainTextBytes)
+	defer wipe(serializePlaintext)
+	copy(serializePlaintext, plainText)
 
 	var err error
 	initialVector := make([]byte, desBlockLen)
@@ -263,14 +299,20 @@ func GenerateMac(currentKey []byte, plainText, action string) ([]byte, error) {
 // Params:
 //   - current key is 16 bytes transaction key
 //   - iv is initial vector
-//   - plain text is transaction request data
+//   - plain text is the data to encrypt, zero-padded to a multiple of 8 bytes
 //   - action is request or response action
 //
 // Return Params:
 //   - result is encrypted data
 //   - err
+//
+// The data key variant, the derived data encryption key and its halves, and
+// the padded copy of plainText are cleared before returning; currentKey is not
+// modified and stays the caller's to clear. plainText is a string, which cannot
+// be cleared.
 func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error) {
 	dataKey := make([]byte, keyLen)
+	defer wipe(dataKey)
 	copy(dataKey, currentKey)
 
 	if action != pkg.ActionRequest && action != pkg.ActionResponse {
@@ -291,22 +333,27 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(leftKey)
 
 	rightKey, err := keyCipher.Encrypt(dataKey[desBlockLen:])
 	if err != nil {
 		return nil, err
 	}
+	defer wipe(rightKey)
 
-	newKey := append(leftKey, rightKey...)
+	newKey := make([]byte, 0, keyLen)
+	newKey = append(newKey, leftKey...)
+	newKey = append(newKey, rightKey...)
+	defer wipe(newKey)
 	dataCipher, _ := encryption.NewTripleDesECB(newKey)
 
-	plainTextBytes := []byte(plainText)
-	repeatCnt := len(plainTextBytes) / desBlockLen
-	if len(plainTextBytes)%desBlockLen > 0 {
+	repeatCnt := len(plainText) / desBlockLen
+	if len(plainText)%desBlockLen > 0 {
 		repeatCnt++
 	}
 	serializePlaintext := make([]byte, repeatCnt*desBlockLen)
-	copy(serializePlaintext, plainTextBytes)
+	defer wipe(serializePlaintext)
+	copy(serializePlaintext, plainText)
 
 	ciphertext := make([]byte, len(serializePlaintext))
 	// A.4.1 Variants of the Current Key
@@ -341,10 +388,18 @@ func EncryptData(currentKey, iv []byte, plainText, action string) ([]byte, error
 //   - action is request or response action
 //
 // Return Params:
-//   - result is transaction request data ( must be a multiple of tdes block length [8])
+//   - result is the decrypted data, a multiple of the TDEA block length (8
+//     bytes); it includes any padding added before encryption
 //   - err
+//
+// The data key variant, the derived data encryption key and its halves, and
+// the buffer the data is decrypted into are cleared before returning;
+// currentKey is not modified and stays the caller's to clear. The result is a
+// string, which the caller cannot clear: the decrypted data stays in memory
+// until the garbage collector reuses it.
 func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, error) {
 	dataKey := make([]byte, keyLen)
+	defer wipe(dataKey)
 	copy(dataKey, currentKey)
 
 	if action != pkg.ActionRequest && action != pkg.ActionResponse {
@@ -365,13 +420,18 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 	if err != nil {
 		return "", err
 	}
+	defer wipe(leftKey)
 
 	rightKey, err := keyCipher.Encrypt(dataKey[desBlockLen:])
 	if err != nil {
 		return "", err
 	}
+	defer wipe(rightKey)
 
-	newKey := append(leftKey, rightKey...)
+	newKey := make([]byte, 0, keyLen)
+	newKey = append(newKey, leftKey...)
+	newKey = append(newKey, rightKey...)
+	defer wipe(newKey)
 	dataCipher, _ := encryption.NewTripleDesECB(newKey)
 
 	repeatCnt := len(ciphertext) / desBlockLen
@@ -382,6 +442,7 @@ func DecryptData(currentKey, ciphertext, iv []byte, action string) (string, erro
 	copy(serializePlaintext, ciphertext)
 
 	plaintext := make([]byte, len(serializePlaintext))
+	defer wipe(plaintext)
 	// A.4.1 Variants of the Current Key
 	// 	Encryption of the data should use T-DEA in CBC mode.
 	if iv == nil {

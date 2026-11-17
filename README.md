@@ -74,7 +74,7 @@ Moov dukpt project supported general utility functions for managing transaction 
     func GenerateCMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error)
     func GenerateHMAC(currentKey, ksn []byte, plaintext string, keyType string, action string) ([]byte, error)
     func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) ([]byte, error)
-    func DecryptData(currentKey, ksn, iv, ciphertext []byte, keyType, action string) (string, error)
+    func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) (string, error)
 ```
 
 - Utility function that used to get next key serial number 
@@ -109,6 +109,7 @@ Second step is to generate transaction key in from generated initial key and key
     if err != nil {
         return err
     }
+    defer dukpt.Clear(transactionKey) // import "github.com/moov-io/dukpt"
 ```
 
 Data (pin, mac, normal data) is encrypted/decrypted using generated initial key and transaction key
@@ -169,6 +170,19 @@ error from this package.
 - **Keep the previous KSN if you need it.** Copy it before calling
   `GenerateNextAesKsn` or `GenerateNextDesKsn`; in v1.0.0 both write the new counter into
   the slice passed in.
+- **Clear the keys you hold.** Every key the library returns (initial key, transaction
+  key) belongs to the caller, who should clear it with `dukpt.Clear(key)` as soon as it is
+  no longer needed. Prefer it to the `clear` builtin: a `clear` with no later read is a
+  dead store the compiler may remove, while `dukpt.Clear` always writes. The library
+  clears its own intermediates: each derivation step's key, the working keys for PIN, MAC
+  and data encryption, and its byte copies of data (padded plaintext, the buffer data is
+  decrypted into). It cannot clear the key schedules held inside `crypto/aes`,
+  `crypto/des`, `crypto/hmac` and the CMAC implementation, nor any string: a PIN, a PAN,
+  data passed to or returned by the MAC and data functions, or a key in hex. In
+  particular the result of `DecryptData` is a string, so the decrypted data stays in
+  memory until the garbage collector reuses it. `pkg.HexEncode` and `pkg.HexDecode`, the
+  HTTP server and the CLI also handle keys in hex, so prefer the `[]byte` key functions
+  when handling live keys.
 - **`DerivationOfInitialKey(bdk, ksn)` uses only the first 8 bytes** of `ksn` (the Initial
   Key ID) for AES, so passing either the ID or a full 12-byte KSN gives the same key.
 
