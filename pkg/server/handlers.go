@@ -72,7 +72,7 @@ func findMachineEndpoint(s Service) endpoint.Endpoint {
 	return func(_ context.Context, request interface{}) (interface{}, error) {
 		req, ok := request.(findMachineRequest)
 		if !ok {
-			return generateKSNResponse{Err: ErrFoundABug}, ErrFoundABug
+			return findMachineResponse{Err: ErrFoundABug}, ErrFoundABug
 		}
 
 		resp := findMachineResponse{}
@@ -274,7 +274,7 @@ func decryptPinEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptPinResponse{}
-		decrypted, err := s.EncryptPin(req.ik, req.encrypted, req.pan, req.format)
+		decrypted, err := s.DecryptPin(req.ik, req.encrypted, req.pan, req.format)
 		if err != nil {
 			resp.Err = err
 			return resp, nil
@@ -445,7 +445,7 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		}
 
 		resp := decryptDataResponse{}
-		decrypted, err := s.EncryptData(req.ik, req.data, req.action, req.iv)
+		decrypted, err := s.DecryptData(req.ik, req.data, req.action, req.iv)
 		if err != nil {
 			resp.Err = err
 			return resp, nil
@@ -455,3 +455,15 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 		return resp, nil
 	}
 }
+
+// The response types implement errorer, so encodeResponse can set the status
+// and message of a failed operation.
+func (r getMachinesResponse) error() error   { return r.Err }
+func (r findMachineResponse) error() error   { return r.Err }
+func (r createMachineResponse) error() error { return r.Err }
+func (r generateKSNResponse) error() error   { return r.Err }
+func (r encryptPinResponse) error() error    { return r.Err }
+func (r decryptPinResponse) error() error    { return r.Err }
+func (r generateMacResponse) error() error   { return r.Err }
+func (r encryptDataResponse) error() error   { return r.Err }
+func (r decryptDataResponse) error() error   { return r.Err }

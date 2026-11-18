@@ -7,8 +7,13 @@ import (
 	"fmt"
 
 	"github.com/moov-io/dukpt/encryption"
+	"github.com/moov-io/dukpt/internal/memzero"
 	"github.com/moov-io/dukpt/pkg"
 )
+
+// wipe clears a buffer that held key material, or data decrypted with it. It is
+// a variable only so tests can observe which buffers the package clears.
+var wipe = memzero.Bytes
 
 const (
 	derivationKeyIdLength    = 4
@@ -120,8 +125,16 @@ func getDerivationKeyType(keyLen int) (string, error) {
 	return "", errors.New("unsupported key length yet")
 }
 
+// derivationKey derives a key from key and derivationData (ANSI X9.24-3-2017
+// 6.3.1 Derive_Key): one AES block of derivation data is encrypted per 128 bits
+// of the derived key, incrementing the Key Block Counter each time, and the key
+// is the leftmost L bits of the result, where L is derivationData.Length.
+//
+// The returned key belongs to the caller, who must clear it. key is not
+// modified. Each encrypted block is cleared once copied into the result, and on
+// an error the partial result is cleared, so no part of the derived key is left
+// behind except the one returned.
 func derivationKey(key []byte, derivationData *keyDerivationData) ([]byte, error) {
-	var derivedKey []byte
 	derivedKeyLen := int(derivationData.Length / 8)
 
 	aesEcb, err := encryption.NewAesECB(key)
@@ -129,17 +142,29 @@ func derivationKey(key []byte, derivationData *keyDerivationData) ([]byte, error
 		return nil, err
 	}
 
+	// Sized for every block up front: growing the slice with append would copy
+	// the first half of the key to a new array and abandon the old one uncleared.
+	blocks := (derivedKeyLen + aes.BlockSize - 1) / aes.BlockSize
+	derivedKey := make([]byte, 0, blocks*aes.BlockSize)
+
 	for offset := 0; offset < derivedKeyLen; offset += aes.BlockSize {
 		data := derivationData.Bytes()
 		encrypted, encErr := aesEcb.Encrypt(data)
 		if encErr != nil {
+			wipe(derivedKey[:cap(derivedKey)])
 			return nil, encErr
 		}
 		derivedKey = append(derivedKey, encrypted...)
+		wipe(encrypted)
 		derivationData.KeyBlockCounter++
 	}
 
-	return derivedKey, nil
+	// 6.3.1: derivedKey = result[0..(L/8)-1]. A 192-bit key takes two blocks,
+	// so the last 8 bytes of the second block are not part of the key. Clear
+	// them, and cap the result at the key length so the caller's slice cannot
+	// reach them.
+	wipe(derivedKey[derivedKeyLen:])
+	return derivedKey[:derivedKeyLen:derivedKeyLen], nil
 }
 
 // Create key derivation data
@@ -185,14 +210,17 @@ func createDerivationData(keyUsage uint16, keyType string, initialKeyID []byte, 
 		return nil, fmt.Errorf("initial key id length must be at least %d bytes", initialKeyIdLength)
 	}
 
+	// New buffer so the counter write cannot alias the caller's KSN.
+	data.InitialKeyID = make([]byte, initialKeyIdLength)
 	switch keyUsage {
 	case usageForKeyInitialKey:
-		data.InitialKeyID = make([]byte, initialKeyIdLength)
-		copy(data.InitialKeyID, initialKeyID)
+		// Table 2: the full Initial Key ID.
+		copy(data.InitialKeyID, initialKeyID[:initialKeyIdLength])
 	default:
-		tcBuf := make([]byte, 4)
-		binary.BigEndian.PutUint32(tcBuf, tc)
-		data.InitialKeyID = append(initialKeyID[derivationKeyIdLength:derivationKeyIdLength+derivationIdLength], tcBuf...)
+		// Table 3: the Derivation ID (bytes 4..7 of the Initial Key ID), then
+		// the transaction counter.
+		copy(data.InitialKeyID, initialKeyID[derivationKeyIdLength:derivationKeyIdLength+derivationIdLength])
+		binary.BigEndian.PutUint32(data.InitialKeyID[derivationIdLength:], tc)
 	}
 
 	return &data, nil
@@ -252,6 +280,9 @@ func checkWorkingKeyLength(keyLen int, keyType string) error {
 	return nil
 }
 
+// generateDerivationKey derives a working key (PIN, MAC or data key) from the
+// transaction key in params.CurrentKey (ANSI X9.24-3-2017 6.3.4). The returned
+// key belongs to the caller, who must clear it once used.
 func generateDerivationKey(params derivationParams) ([]byte, error) {
 	tc := pkg.GetAesTcFromKsn(params.Ksn)
 	derivationData, err := createDerivationData(params.KeyUsage, params.KeyType, params.Ksn, tc)

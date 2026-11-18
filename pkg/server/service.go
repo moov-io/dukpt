@@ -94,7 +94,7 @@ func (s *service) GetMachines() []*Machine {
 func (s *service) MakeNextKSN(ik string) (*Machine, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return nil, fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return nil, fmt.Errorf("make next ksn: %w", err)
 	}
 
 	var nextKsn []byte
@@ -134,7 +134,7 @@ func (s *service) DeleteMachine(ik string) error {
 func (s *service) EncryptPin(ik, pin, pan, format string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return "", fmt.Errorf("encrypt pin: %w", err)
 	}
 
 	params := UnifiedParams{
@@ -158,7 +158,7 @@ func (s *service) EncryptPin(ik, pin, pan, format string) (string, error) {
 func (s *service) DecryptPin(ik, ciphertext, pan, format string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return "", fmt.Errorf("decrypt pin: %w", err)
 	}
 
 	params := UnifiedParams{
@@ -182,7 +182,7 @@ func (s *service) DecryptPin(ik, ciphertext, pan, format string) (string, error)
 func (s *service) GenerateMac(ik, data, action, macType string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return "", fmt.Errorf("generate mac: %w", err)
 	}
 
 	params := UnifiedParams{
@@ -215,7 +215,7 @@ func (s *service) GenerateMac(ik, data, action, macType string) (string, error) 
 func (s *service) EncryptData(ik, data, action, iv string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return "", fmt.Errorf("encrypt data: %w", err)
 	}
 
 	params := UnifiedParams{
@@ -235,7 +235,7 @@ func (s *service) EncryptData(ik, data, action, iv string) (string, error) {
 func (s *service) DecryptData(ik, ciphertext, action, iv string) (string, error) {
 	m, err := s.GetMachine(ik)
 	if err != nil {
-		return "", fmt.Errorf("make next ksn: %v(%s)", err, ik)
+		return "", fmt.Errorf("decrypt data: %w", err)
 	}
 
 	params := UnifiedParams{
