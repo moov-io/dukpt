@@ -456,7 +456,8 @@ func decryptDataEndpoint(s Service) endpoint.Endpoint {
 	}
 }
 
-// encodeResponse reads errorer to set the status and message of a failed operation.
+// The response types implement errorer, so encodeResponse can set the status
+// and message of a failed operation.
 func (r getMachinesResponse) error() error   { return r.Err }
 func (r findMachineResponse) error() error   { return r.Err }
 func (r createMachineResponse) error() error { return r.Err }

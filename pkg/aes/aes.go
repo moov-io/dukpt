@@ -425,9 +425,9 @@ func EncryptData(currentKey, ksn, iv []byte, plaintext, keyType, action string) 
 // Params:
 //   - current key is 16 bytes transaction key
 //   - ksn is 12 bytes key serial number
+//   - cipher text is encrypted data
 //   - iv is the initial vector: nil means all zeros, a shorter one is padded
 //     with zeros and a longer one truncated to one block; it is not modified
-//   - cipher text is encrypted data
 //   - key type is AES128, AES192, AES256
 //   - action is request or response action
 //
