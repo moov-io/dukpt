@@ -125,7 +125,7 @@ func TestService__DecryptPin(t *testing.T) {
 	m = NewMachine(mockBaseAesKey())
 	s.CreateMachine(m)
 
-	pin, err = s.DecryptPin(m.InitialKey, "1dd48e0fc64d89836fa3b71cf4aa3783", "4111111111111111", "")
+	pin, err = s.DecryptPin(m.InitialKey, "1dd48e0fc64d89836fa3b71cf4aa3783", "4111111111111111", "") // gitleaks:allow
 	require.NoError(t, err)
 	require.Equal(t, "1234", strings.ToUpper(pin))
 }
@@ -154,14 +154,14 @@ func TestService__DecryptData(t *testing.T) {
 	m := NewMachine(mockBaseDesKey())
 	s.CreateMachine(m)
 
-	data, err := s.DecryptData(m.InitialKey, "FC0D53B7EA1FDA9EE68AAF2E70D9B9506229BE2AA993F04F", pkg.ActionRequest, "")
+	data, err := s.DecryptData(m.InitialKey, "FC0D53B7EA1FDA9EE68AAF2E70D9B9506229BE2AA993F04F", pkg.ActionRequest, "") // gitleaks:allow
 	require.NoError(t, err)
 	require.Equal(t, 0, strings.Index(strings.ToUpper(data), "4012345678909D987"))
 
 	m = NewMachine(mockBaseAesKey())
 	s.CreateMachine(m)
 
-	data, err = s.DecryptData(m.InitialKey, "E5AFA5B408A3310E3D779C8A9A2AE29448BD5B4232582090DB703AF647205A79", pkg.ActionRequest, "")
+	data, err = s.DecryptData(m.InitialKey, "E5AFA5B408A3310E3D779C8A9A2AE29448BD5B4232582090DB703AF647205A79", pkg.ActionRequest, "") // gitleaks:allow
 	require.NoError(t, err)
 	require.Equal(t, 0, strings.Index(strings.ToUpper(data), "4012345678909D987"))
 }
