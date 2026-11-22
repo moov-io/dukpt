@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/moov-io/dukpt"
 	"github.com/moov-io/dukpt/pkg"
@@ -11,14 +12,14 @@ import (
 )
 
 var (
-	flagVersion = flag.Bool("v", false, "Print dupkt cli version")
+	flagVersion = flag.Bool("v", false, "Print dukpt cli version")
 
 	flagAlgorithm        = flag.String("algorithm", "des", "data encryption algorithm (options: des, aes)")
-	flagAlgorithmKeyType = flag.String("algorithm.key_type", "aes128", "key type of aes (options: aes128, aes192, aes256")
+	flagAlgorithmKeyType = flag.String("algorithm.key_type", "AES128", "key type of aes, not case sensitive (options: AES128, AES192, AES256, HMAC128, HMAC192, HMAC256). With gm.type=hmac, AES<n> is used as HMAC<n>")
 
-	flagInitialKey    = flag.Bool("ik", false, "derive initial key from base derivative key and key serial number (or initial key id)")
+	flagInitialKey    = flag.Bool("ik", false, "derive initial key from base derivative key and key serial number")
 	flagInitialKeyBKD = flag.String("ik.bdk", "", "base derivative key")
-	flagInitialKeyKSN = flag.String("ik.ksn", "", "key serial number")
+	flagInitialKeyKSN = flag.String("ik.ksn", "", "key serial number (des: 10 bytes, aes: 12 bytes, which includes the initial key id)")
 
 	flagTransactionKey    = flag.Bool("tk", false, "derive transaction key (current transaction key) from initial key and key serial number")
 	flagTransactionKeyIK  = flag.String("tk.ik", "", "initial key")
@@ -64,6 +65,9 @@ func main() {
 	flag.Usage = help
 	flag.Parse()
 	params := server.UnifiedParams{}
+
+	*flagAlgorithm = strings.ToLower(strings.TrimSpace(*flagAlgorithm))
+	*flagGenerateMacType = strings.ToLower(strings.TrimSpace(*flagGenerateMacType))
 
 	switch {
 	case *flagVersion:
@@ -138,7 +142,7 @@ func main() {
 			}
 		} else {
 			if *flagEncryptPinFormat == "" {
-				fmt.Printf("please select pin block format with ep.formst flag\n")
+				fmt.Printf("please select pin block format with ep.format flag\n")
 				os.Exit(1)
 			}
 		}
@@ -175,7 +179,7 @@ func main() {
 			}
 		} else {
 			if *flagDecryptPinFormat == "" {
-				fmt.Printf("please select pin block format with dp.formst flag\n")
+				fmt.Printf("please select pin block format with dp.format flag\n")
 				os.Exit(1)
 			}
 		}
