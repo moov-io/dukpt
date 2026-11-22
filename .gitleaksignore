@@ -15,3 +15,11 @@ pkg/aes/aes192_test.go:generic-api-key:45
 pkg/aes/aes192_test.go:generic-api-key:49
 pkg/aes/aes192_test.go:generic-api-key:53
 pkg/aes/aes192_test.go:generic-api-key:57
+example_test.go:generic-api-key:50
+example_test.go:generic-api-key:51
+example_test.go:generic-api-key:112
+example_test.go:generic-api-key:113
+README.md:generic-api-key:457
+README.md:generic-api-key:458
+README.md:generic-api-key:465
+README.md:generic-api-key:472
