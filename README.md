@@ -340,7 +340,7 @@ FLAGS
     	initial key
   -tk.ksn string
     	key serial number
-  -v	Print dupkt cli version
+  -v	Print dukpt cli version
 ```
 
 User should use main flag and sub flag. algorithm.key_type flag is a sub flag of algorithm flag.
