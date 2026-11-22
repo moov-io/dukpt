@@ -1,8 +1,10 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,15 +14,22 @@ import (
 	moovhttp "github.com/moov-io/base/http"
 )
 
+// errInvalidJSON is returned when a request body is not a valid JSON object.
+var errInvalidJSON = errors.New("could not parse json request")
+
 func bindJSON(request *http.Request, params interface{}) (err error) {
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
-		return fmt.Errorf("could not parse json request: %s", err)
+		return fmt.Errorf("%w: %s", errInvalidJSON, err)
+	}
+
+	if len(bytes.TrimSpace(body)) == 0 {
+		return fmt.Errorf("%w: the request body is empty, send a JSON object", errInvalidJSON)
 	}
 
 	err = json.Unmarshal(body, params)
 	if err != nil {
-		return fmt.Errorf("could not parse json request: %s", err)
+		return fmt.Errorf("%w: %s", errInvalidJSON, err)
 	}
 	return
 }

@@ -23,5 +23,6 @@ func NewMachine(b BaseKey) *Machine {
 	return &Machine{
 		BaseKey:    b,
 		CurrentKSN: b.KeySerialNumber,
+		CreatedAt:  time.Now(),
 	}
 }

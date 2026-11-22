@@ -111,3 +111,35 @@ func TestHandlers_UnknownMachine(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlers_EmptyBody(t *testing.T) {
+	router := mockHttpHandler()
+
+	for _, body := range []string{"", "  \n"} {
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, httptest.NewRequest("POST", "/machine", strings.NewReader(body)))
+		require.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
+		require.Contains(t, w.Body.String(), "the request body is empty")
+	}
+}
+
+func TestHandlers_MachineCreatedAt(t *testing.T) {
+	router := mockHttpHandler()
+	code, created := postJSON(t, router, "/machine", mockBaseDesKey())
+	require.Equal(t, http.StatusOK, code, "%v", created)
+
+	machine, ok := created["machine"].(map[string]any)
+	require.True(t, ok)
+	createdAt, ok := machine["CreatedAt"].(string)
+	require.True(t, ok)
+	require.NotEqual(t, "0001-01-01T00:00:00Z", createdAt)
+}
+
+func TestHandlers_InvalidJSON(t *testing.T) {
+	router := mockHttpHandler()
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, httptest.NewRequest("POST", "/machine", strings.NewReader("{not json")))
+	require.Equal(t, http.StatusBadRequest, w.Code, w.Body.String())
+	require.Contains(t, w.Body.String(), "could not parse json request")
+}
