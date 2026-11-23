@@ -253,9 +253,9 @@ USAGE
    dukptcli [-v] [-algorithm] [-ik] [-tk] [-ep] [-dp] [-gm] [-en] [-de]
 
 EXAMPLES
-  dukptcli -v          Print the version of dukptcli (Example: v1.0.0)
+  dukptcli -v          Print the version of dukptcli (Example: v1.2.0)
   dukptcli -algorithm  Data encryption algorithm (options: des, aes)
-  dukptcli -ik         Derive initial key from base derivative key and key serial number (or initial key id)  
+  dukptcli -ik         Derive initial key from base derivative key and key serial number
   dukptcli -tk         Derive transaction key (current transaction key) from initial key and key serial number
   dukptcli -ep         Encrypt pin block using dukpt transaction key
   dukptcli -dp         Decrypt pin block using dukpt transaction key
@@ -265,91 +265,95 @@ EXAMPLES
 
 FLAGS
   -algorithm string
-        data encryption algorithm (options: des, aes) (default "des")
+    	data encryption algorithm (options: des, aes) (default "des")
   -algorithm.key_type string
-        key type of aes (options: aes128, aes192, aes256 (default "aes128")
+    	key type of aes, not case sensitive (options: AES128, AES192, AES256, HMAC128, HMAC192, HMAC256). With gm.type=hmac, AES<n> is used as HMAC<n> (default "AES128")
   -de
-        decrypt data using dukpt transaction key
+    	decrypt data using dukpt transaction key
   -de.action string
-        request or response action (default "request")
+    	request or response action (default "request")
   -de.data string
-        encrypted text transformed from plaintext using an encryption algorithm
+    	encrypted text transformed from plaintext using an encryption algorithm
   -de.iv string
-        initial vector (not formatted string)
+    	initial vector (not formatted string)
   -de.ksn string
-        key serial number
+    	key serial number
   -de.tk string
-        current transaction key
+    	current transaction key
   -dp
-        decrypt pin block using dukpt transaction key
+    	decrypt pin block using dukpt transaction key
   -dp.format string
-        pin block format (ISO-0, ISO-1, ISO-2, ISO-3, ISO-4, ANSI, ECI1, ECI2, ECI3, ECI4, VISA1, VISA2, VISA3, VISA4)
+    	pin block format (ISO-0, ISO-1, ISO-2, ISO-3, ISO-4, ANSI, ECI1, ECI2, ECI3, ECI4, VISA1, VISA2, VISA3, VISA4)
   -dp.ksn string
-        key serial number
+    	key serial number
   -dp.pan string
-        not formatted pan string
+    	not formatted pan string
   -dp.pin string
-        encrypted text transformed from plaintext using an encryption algorithm
+    	encrypted text transformed from plaintext using an encryption algorithm
   -dp.tk string
-        current transaction key
+    	current transaction key
   -en
-        encrypt data using dukpt transaction key
+    	encrypt data using dukpt transaction key
   -en.action string
-        request or response action (default "request")
+    	request or response action (default "request")
   -en.data string
-        not formatted request data
+    	not formatted request data
   -en.iv string
-        initial vector (not formatted string)
+    	initial vector (not formatted string)
   -en.ksn string
-        key serial number
+    	key serial number
   -en.tk string
-        current transaction key
+    	current transaction key
   -ep
-        encrypt pin block using dukpt transaction key
+    	encrypt pin block using dukpt transaction key
   -ep.format string
-        pin block format (ISO-0, ISO-1, ISO-2, ISO-3, ISO-4, ANSI, ECI1, ECI2, ECI3, ECI4, VISA1, VISA2, VISA3, VISA4)
+    	pin block format (ISO-0, ISO-1, ISO-2, ISO-3, ISO-4, ANSI, ECI1, ECI2, ECI3, ECI4, VISA1, VISA2, VISA3, VISA4)
   -ep.ksn string
-        key serial number
+    	key serial number
   -ep.pan string
-        not formatted pan string
+    	not formatted pan string
   -ep.pin string
-        not formatted pin string
+    	not formatted pin string
   -ep.tk string
-        current transaction key
+    	current transaction key
   -gm
-        generate mac using dukpt transaction key
+    	generate mac using dukpt transaction key
   -gm.action string
-        request or response action (default "request")
+    	request or response action (default "request")
   -gm.data string
-        not formatted request data
+    	not formatted request data
   -gm.ksn string
-        key serial number
+    	key serial number
   -gm.tk string
-        current transaction key
+    	current transaction key
   -gm.type string
-        cmac or hmac style (is valid using aes algorithm) (default "cmac")
+    	cmac or hmac style (is valid using aes algorithm) (default "cmac")
   -ik
-        derive initial key from base derivative key and key serial number (or initial key id)
+    	derive initial key from base derivative key and key serial number
   -ik.bdk string
-        base derivative key
-  -ik.kid string
-        initial key id
+    	base derivative key
   -ik.ksn string
-        key serial number
+    	key serial number (des: 10 bytes, aes: 12 bytes, which includes the initial key id)
   -tk
-        derive transaction key (current transaction key) from initial key and key serial number
+    	derive transaction key (current transaction key) from initial key and key serial number
   -tk.ik string
-        initial key
+    	initial key
   -tk.ksn string
-        key serial number
-  -v    Print dupkt cli version
+    	key serial number
+  -v	Print dukpt cli version
 ```
 
 User should use main flag and sub flag. algorithm.key_type flag is a sub flag of algorithm flag.
 
+The values of `-algorithm`, `-algorithm.key_type` and `-gm.type` are not case sensitive. With `-algorithm=aes`, the key type is `AES128` by default. Use `AES192` or `AES256` for longer keys. With `-gm.type=hmac`, the key type `AES<n>` is used as `HMAC<n>`.
+
+`-ik.ksn` takes the key serial number for both algorithms: 10 bytes for TDES, and 12 bytes for AES. The AES key serial number includes the 8-byte initial key id.
+
+Values such as keys, key serial numbers and encrypted text are hex. A value that is not valid hex gives an error that names the flag value, for example `invalid hex value for bdk`.
+
 There are some execution flags in this cli
 ```
-    dukptcli -ik         Derive initial key from base derivative key and key serial number (or initial key id)  
+    dukptcli -ik         Derive initial key from base derivative key and key serial number
     dukptcli -tk         Derive transaction key (current transaction key) from initial key and key serial number
     dukptcli -ep         Encrypt pin block using dukpt transaction key
     dukptcli -dp         Decrypt pin block using dukpt transaction key
