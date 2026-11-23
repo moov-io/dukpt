@@ -255,7 +255,7 @@ func codeFrom(err error) int {
 	switch {
 	case errors.Is(err, ErrNotFound):
 		return http.StatusNotFound
-	case errors.Is(err, ErrAlreadyExists):
+	case errors.Is(err, ErrAlreadyExists), errors.Is(err, errInvalidJSON):
 		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError

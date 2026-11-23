@@ -20,9 +20,15 @@ import (
 	kitlog "github.com/go-kit/log"
 )
 
+const (
+	// Default listen addresses, used when github.com/moov-io/base/http/bind has no entry for dukpt.
+	defaultHTTPAddr  = ":8095"
+	defaultAdminAddr = ":9105"
+)
+
 var (
-	httpAddr  = flag.String("http.addr", bind.HTTP("dukpt"), "HTTP listen address")
-	adminAddr = flag.String("admin.addr", bind.Admin("dukpt"), "Admin HTTP listen address")
+	httpAddr  = flag.String("http.addr", orDefault(bind.HTTP("dukpt"), defaultHTTPAddr), "HTTP listen address")
+	adminAddr = flag.String("admin.addr", orDefault(bind.Admin("dukpt"), defaultAdminAddr), "Admin HTTP listen address")
 
 	flagLogFormat = flag.String("log.format", "", "Format for log lines (Options: json, plain")
 
@@ -129,4 +135,11 @@ func main() {
 		shutdownServer()
 		logger.LogError(err)
 	}
+}
+
+func orDefault(value, def string) string {
+	if value != "" {
+		return value
+	}
+	return def
 }
