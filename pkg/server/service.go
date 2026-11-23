@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/moov-io/dukpt/pkg"
-	"github.com/moov-io/dukpt/pkg/aes"
 )
 
 var (
@@ -50,11 +49,12 @@ func (s *service) CreateMachine(m *Machine) error {
 		AlgorithmKey: m.AlgorithmKey,
 		KSN:          m.KeySerialNumber,
 		BKD:          m.BaseDerivativeKey,
-	}
-
+	}.normalize()
 	if err := params.ValidateAlgorithm(); err != nil {
 		return err
 	}
+	m.Algorithm = params.Algorithm
+	m.AlgorithmKey = params.AlgorithmKey
 
 	ik, err := InitialKey(params)
 	if err != nil {
@@ -97,8 +97,9 @@ func (s *service) MakeNextKSN(ik string) (*Machine, error) {
 		return nil, fmt.Errorf("make next ksn: %w", err)
 	}
 
+	algo := UnifiedParams{Algorithm: m.Algorithm}.normalize().Algorithm
 	var nextKsn []byte
-	if m.Algorithm == pkg.AlgorithmAes {
+	if algo == pkg.AlgorithmAes {
 		nextKsn, err = pkg.GenerateNextAesKsn(pkg.HexDecode(m.CurrentKSN))
 		if err != nil {
 			return nil, err
@@ -194,19 +195,6 @@ func (s *service) GenerateMac(ik, data, action, macType string) (string, error) 
 		Plaintext:    data,
 		Action:       action,
 		MacType:      macType,
-	}
-
-	// workaround for hmac
-	if macType == pkg.MaxTypeHmac && m.Algorithm == pkg.AlgorithmAes {
-		if m.AlgorithmKey == aes.KeyAES128Type {
-			params.AlgorithmKey = aes.KeyHMAC128Type
-		}
-		if m.AlgorithmKey == aes.KeyAES192Type {
-			params.AlgorithmKey = aes.KeyHMAC192Type
-		}
-		if m.AlgorithmKey == aes.KeyAES256Type {
-			params.AlgorithmKey = aes.KeyHMAC256Type
-		}
 	}
 
 	return GenerateMac(params)

@@ -95,6 +95,23 @@ func TestService__MakeNextKSN(t *testing.T) {
 	require.Equal(t, "123456789012345600000002", m.CurrentKSN)
 }
 
+func TestService__MakeNextKSN_MixedCaseAES(t *testing.T) {
+	s := mockServiceInMemory()
+	m := NewMachine(BaseKey{
+		Algorithm:         "AES",
+		BaseDerivativeKey: "FEDCBA9876543210F1F1F1F1F1F1F1F1",
+		KeySerialNumber:   "123456789012345600000001",
+		AlgorithmKey:      "aes128",
+	})
+	require.NoError(t, s.CreateMachine(m))
+	require.Equal(t, pkg.AlgorithmAes, m.Algorithm)
+	require.Equal(t, aes.KeyAES128Type, m.AlgorithmKey)
+
+	m, err := s.MakeNextKSN(m.InitialKey)
+	require.NoError(t, err)
+	require.Equal(t, "123456789012345600000002", m.CurrentKSN)
+}
+
 func TestService__EncryptPin(t *testing.T) {
 	s := mockServiceInMemory()
 

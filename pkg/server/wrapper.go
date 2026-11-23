@@ -38,9 +38,7 @@ func (p UnifiedParams) ValidateAlgorithm() error {
 
 type WrapperCall func(params UnifiedParams) (string, error)
 
-// normalize makes the algorithm lower case and the AES key type upper case.
-// For AES, an empty key type is AES128. For an HMAC, an AES key type is
-// changed to the HMAC key type of the same length (for example AES128 to HMAC128).
+// pkg/aes HMAC derivation requires HMAC* key types; CMAC requires AES*.
 func (p UnifiedParams) normalize() UnifiedParams {
 	p.Algorithm = strings.ToLower(strings.TrimSpace(p.Algorithm))
 	p.AlgorithmKey = strings.ToUpper(strings.TrimSpace(p.AlgorithmKey))
@@ -60,9 +58,7 @@ func (p UnifiedParams) normalize() UnifiedParams {
 	return p
 }
 
-// decodeHex decodes a hex value. An empty value gives nil, and the
-// key functions return their usual error for it. A value that is not
-// valid hex gives an error that names the field.
+// Empty hex is nil so missing keys keep the usual length errors.
 func decodeHex(name, value string) ([]byte, error) {
 	if value == "" {
 		return nil, nil
@@ -74,7 +70,6 @@ func decodeHex(name, value string) ([]byte, error) {
 	return out, nil
 }
 
-// decodeHexFields decodes the named hex values in order and stops at the first error.
 func decodeHexFields(fields ...string) ([][]byte, error) {
 	out := make([][]byte, 0, len(fields)/2)
 	for i := 0; i+1 < len(fields); i += 2 {
