@@ -1,9 +1,9 @@
 [![Moov Banner Logo](https://user-images.githubusercontent.com/20115216/104214617-885b3c80-53ec-11eb-8ce0-9fc745fb5bfc.png)](https://github.com/moov-io)
 
 <p align="center">
-  <a href="https://moov-io.github.io/dukpt/">Project Documentation</a>
+  <a href="https://pkg.go.dev/github.com/moov-io/dukpt">Project Documentation</a>
   ·
-  <a href="https://moov-io.github.io/dukpt/api/#overview">API Endpoints</a>
+  <a href="#rest-apis">API Endpoints</a>
   ·
   <a href="https://slack.moov.io/">Community</a>
   ·
@@ -21,12 +21,14 @@ This project implements the ANSI X9.24-3:2017 standard for TDES and AES Derived 
 - [Project status](#project-status)
 - [Usage](#usage)
     - [Go library](#go-library)
-    - [DUPKT apis](#dupkt-apis)
+    - [DUKPT apis](#dukpt-apis)
     - [How to](#how-to)
     - [What the caller must do](#what-the-caller-must-do)
     - [Command lines](#command-lines)
     - [Service Instance](#service-instance)
     - [Rest APIs](#rest-apis)
+        - [Run the server](#run-the-server)
+        - [Examples](#examples)
 - [Supported and tested platforms](#supported-and-tested-platforms)
 - [Contributing](#contributing)
 - [Releasing](#releasing)
@@ -42,15 +44,32 @@ Moov dukpt is actively used for validation and debugging. Please star the projec
 
 ### Go library
 
-This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/dupkt/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.26 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/dukpt/releases/latest) as well. We highly recommend you use a tagged release for production.
+
+Add the library to your module. Run `go mod tidy` after you add the imports (for example `github.com/moov-io/dukpt/pkg/des` or `github.com/moov-io/dukpt/pkg/aes`) to your code, so that `go.sum` gets the entries for their dependencies.
 
 ```
-$ git@github.com:moov-io/dupkt.git
-
-$ go get -u github.com/moov-io/dukpt
+$ go get github.com/moov-io/dukpt@latest
+$ go mod tidy
 ```
 
-### DUPKT apis
+Releases have no binaries and there is no Docker image. Install the CLI with Go:
+
+```
+$ go install github.com/moov-io/dukpt/cmd/dukptcli@latest
+```
+
+To build from source:
+
+```
+$ git clone https://github.com/moov-io/dukpt.git
+$ cd dukpt
+$ go build ./...
+$ go run ./cmd/dukptcli -h
+$ go run ./cmd/server
+```
+
+### DUKPT apis
 
 Moov dukpt project supported general utility functions for managing transaction key. The functions divided into two group as aes and des
 
@@ -77,68 +96,106 @@ Moov dukpt project supported general utility functions for managing transaction 
     func DecryptData(currentKey, ksn, ciphertext, iv []byte, keyType, action string) (string, error)
 ```
 
-- Utility function that used to get next key serial number 
+- Utility functions in `github.com/moov-io/dukpt/pkg`
 ```
-    GenerateNextAesKsn(ksn []byte) ([]byte, error)
+    func GenerateNextAesKsn(ksn []byte) ([]byte, error)  // next AES key serial number
+    func GenerateNextDesKsn(ksn []byte) ([]byte, error)  // next TDES key serial number
+    func GetAesTcFromKsn(ksn []byte) uint32              // transaction counter of an AES key serial number
+    func GetDesTcFromKsn(ksn []byte) uint32              // transaction counter of a TDES key serial number
+    func IsValidAesKsn(ksn []byte) bool                  // checks an AES key serial number before you derive keys
+    func HexDecode(data string) []byte                   // returns nil if data is not valid hex
+    func HexEncode(data []byte) string
 ```
+
+- `func Clear(b []byte)` in `github.com/moov-io/dukpt` clears a key that you no longer need.
 
 ### How to
 
-First step is to derive initial key in from base derivative key and key serial number (or initial key id). Base derivative key (BKD) can get from base derivative key id. The package don't specify how to get base derivative key.  
+First step is to derive initial key from base derivative key (BDK) and key serial number (KSN). For aes, `DerivationOfInitialKey` uses only the first 8 bytes of the KSN (the initial key ID), so you can give the initial key ID or the full 12-byte KSN. The package doesn't specify how to get the base derivative key.
 
-- des
-```
-    ik, err := DerivationOfInitialKey(bdk, ksn)
-    if err != nil {
-        return err
-    }
+Second step is to derive the transaction key from the initial key and the key serial number. Then use the transaction key to encrypt and decrypt data (PIN, MAC, normal data).
+
+The program below uses the ANSI X9.24-1 (des) and ANSI X9.24-3 (aes) test vectors. It is in [example_test.go](example_test.go), and `go test` runs it.
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/moov-io/dukpt"
+	"github.com/moov-io/dukpt/pkg"
+	"github.com/moov-io/dukpt/pkg/aes"
+	"github.com/moov-io/dukpt/pkg/des"
+)
+
+func main() {
+	// des
+	bdk := pkg.HexDecode("0123456789ABCDEFFEDCBA9876543210")
+	ksn := pkg.HexDecode("FFFF9876543210E00001")
+
+	ik, err := des.DerivationOfInitialKey(bdk, ksn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dukpt.Clear(ik)
+
+	transactionKey, err := des.DeriveCurrentTransactionKey(ik, ksn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dukpt.Clear(transactionKey)
+
+	encryptedPin, err := des.EncryptPin(transactionKey, "1234", "4012345678909", "ISO-0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	decryptedPin, err := des.DecryptPin(transactionKey, encryptedPin, "4012345678909", "ISO-0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pkg.HexEncode(ik), pkg.HexEncode(encryptedPin), decryptedPin)
+	// 6ac292faa1315b4d858ab3a3d7d5933a 1b9c1845eb993a7a 1234
+
+	// aes
+	aesBdk := pkg.HexDecode("FEDCBA9876543210F1F1F1F1F1F1F1F1")
+	aesKsn := pkg.HexDecode("123456789012345600000001")
+	if !pkg.IsValidAesKsn(aesKsn) {
+		log.Fatal("invalid KSN")
+	}
+
+	aesIk, err := aes.DerivationOfInitialKey(aesBdk, aesKsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dukpt.Clear(aesIk)
+
+	aesTransactionKey, err := aes.DeriveCurrentTransactionKey(aesIk, aesKsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dukpt.Clear(aesTransactionKey)
+
+	encPinblock, err := aes.EncryptPin(aesTransactionKey, aesKsn, "1234", "4111111111111111", aes.KeyAES128Type)
+	if err != nil {
+		log.Fatal(err)
+	}
+	decPinblock, err := aes.DecryptPin(aesTransactionKey, aesKsn, encPinblock, "4111111111111111", aes.KeyAES128Type)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(pkg.HexEncode(aesIk), pkg.HexEncode(aesTransactionKey), decPinblock)
+	// 1273671ea26ac29afa4d1084127652a1 4f21b565bad9835e112b6465635eae44 1234
+}
 ```
 
-- aes
-```
-    ik, err := DerivationOfInitialKey(bdk, initialKeyID)
-    if err != nil {
-        return err
-    }
-```
+Notes:
 
-Second step is to generate transaction key in from generated initial key and key serial number.
-
-```
-    transactionKey, err := DeriveCurrentTransactionKey(ik, ksn)
-    if err != nil {
-        return err
-    }
-    defer dukpt.Clear(transactionKey) // import "github.com/moov-io/dukpt"
-```
-
-Data (pin, mac, normal data) is encrypted/decrypted using generated initial key and transaction key
-
-- des
-```
-    eryptedPin, err := EncryptPin(transactionKey, pin, pan, FormatVersion)
-    if err != nil {
-        return err
-    }
-
-    decryptedPin, err := DecryptPin(transactionKey, encryptedPin, pan, FormatVersion)
-    if err != nil {
-        return err
-    }
-```
-
-- aes
-```
-	encPinblock, err := EncryptPin(transactionKey, ksn, pin, pan, KeyAES128Type)
-    if err != nil {
-        return err
-    }
-
-	decPinblock, err := DecryptPin(transactionKey, ksn, encPinblock, pan, KeyAES128Type)
-    if err != nil {
-        return err
-    }
-```
+- The des PIN block formats are strings such as `"ISO-0"`, `"ISO-1"`, `"ISO-3"` and `"ANSI"` (see [moov-io/pinblock](https://github.com/moov-io/pinblock)). The aes `EncryptPin` uses ISO-4.
+- The aes key types are `aes.KeyAES128Type`, `aes.KeyAES192Type`, `aes.KeyAES256Type` and, for `GenerateHMAC`, `aes.KeyHMAC128Type`, `aes.KeyHMAC192Type`, `aes.KeyHMAC256Type`.
+- The action of the MAC and data functions is `pkg.ActionRequest` (`"request"`) or `pkg.ActionResponse` (`"response"`).
+- `DecryptData` returns the data with its zero padding. For example, `"hello"` encrypted with aes comes back as `"hello"` followed by 11 zero bytes.
 
 ### What the caller must do
 
@@ -167,9 +224,10 @@ error from this package.
 - **Check what you decrypt.** `DecryptData` is AES-CBC and authenticates nothing: under
   the wrong key it still returns bytes, not an error. Check the plaintext's format (or a
   MAC) before trusting it.
-- **Keep the previous KSN if you need it.** Copy it before calling
-  `GenerateNextAesKsn` or `GenerateNextDesKsn`; in v1.0.0 both write the new counter into
-  the slice passed in.
+- **Keep the previous KSN if you need it.** In v1.0.0, `GenerateNextAesKsn` and
+  `GenerateNextDesKsn` write the new counter into the slice passed in, so copy the KSN
+  before you call them. From v1.1.0, they do not change the slice passed in; they return
+  a new slice.
 - **Clear the keys you hold.** Every key the library returns (initial key, transaction
   key) belongs to the caller, who should clear it with `dukpt.Clear(key)` as soon as it is
   no longer needed. Prefer it to the `clear` builtin: a `clear` with no later read is a
@@ -349,19 +407,109 @@ DUKPT library provided web server. Please check following http endpoints
 
 | Method | Request Body | Route              | Action         |
 |--------|--------------|--------------------|----------------|
+| GET    |              | /ping              | Health check   |
 | GET    |              | /machines          | Get Machines   |
 | GET    |              | /machine/{ik}      | Get Machine    |
-| POST   |              | /machine           | Create Machine |
-| POST   | JSON         | /generate_ksn/{ik} | Generate KSN   |
-| POST   | JSON         | /encrypt_pin/{ik}  | Encrypt PIN    | 
+| POST   | JSON         | /machine           | Create Machine |
+| POST   |              | /generate_ksn/{ik} | Generate KSN   |
+| POST   | JSON         | /encrypt_pin/{ik}  | Encrypt PIN    |
 | POST   | JSON         | /decrypt_pin/{ik}  | Decrypt Pin    |
 | POST   | JSON         | /generate_mac/{ik} | Generate Mac   |
 | POST   | JSON         | /encrypt_data/{ik} | Encrypt Data   |
 | POST   | JSON         | /decrypt_data/{ik} | Decrypt Data   |
 
+`{ik}` is the initial key of the machine, in hex. There is no route to delete a machine. The server keeps machines in memory, so they are lost when it stops.
+
 User can create web service using following http handler 
 ```
 	handler = server.MakeHTTPHandler(svc)
+```
+
+#### Run the server
+
+Run the server from a clone of this repository:
+
+```
+$ go run ./cmd/server
+ts=... msg="Starting dukpt server version v1.2.0" level=info
+ts=... msg="startup binding to :8095 for HTTP server" level=info
+ts=... msg="admin listening on [::]:9105" level=info
+```
+
+The HTTP server listens on `:8095` and the admin server (`/version`, metrics) listens on `:9105`. To change the addresses, use the `-http.addr` and `-admin.addr` flags or the `HTTP_BIND_ADDRESS` and `HTTP_ADMIN_BIND_ADDRESS` environment variables:
+
+```
+$ go run ./cmd/server -http.addr :8099 -admin.addr :9109
+```
+
+#### Examples
+
+The examples use the des and aes test vectors from [How to](#how-to). All values are hex strings, and the field names are case-sensitive. An error response has an `error` field, for example `{"error":"not found"}` with status 404 for an unknown `{ik}`.
+
+```
+$ curl localhost:8095/ping
+PONG
+```
+
+Create a des machine. `AlgorithmKey` is empty for des.
+
+```
+$ curl -XPOST localhost:8095/machine -d '{"Algorithm":"des","AlgorithmKey":"","BaseDerivativeKey":"0123456789ABCDEFFEDCBA9876543210","KeySerialNumber":"FFFF9876543210E00001"}'
+{"ik":"6ac292faa1315b4d858ab3a3d7d5933a","machine":{"Algorithm":"des","AlgorithmKey":"","BaseDerivativeKey":"0123456789ABCDEFFEDCBA9876543210","KeySerialNumber":"FFFF9876543210E00001","InitialKey":"6ac292faa1315b4d858ab3a3d7d5933a","CurrentKSN":"FFFF9876543210E00001","TransactionKey":"042666b49184cfa368de9628d0397bc9","CreatedAt":"..."},"error":null}
+```
+
+Create an aes machine. `AlgorithmKey` is the key type: `AES128`, `AES192` or `AES256`.
+
+```
+$ curl -XPOST localhost:8095/machine -d '{"Algorithm":"aes","AlgorithmKey":"AES128","BaseDerivativeKey":"FEDCBA9876543210F1F1F1F1F1F1F1F1","KeySerialNumber":"123456789012345600000001"}'
+{"ik":"1273671ea26ac29afa4d1084127652a1","machine":{"Algorithm":"aes","AlgorithmKey":"AES128","BaseDerivativeKey":"FEDCBA9876543210F1F1F1F1F1F1F1F1","KeySerialNumber":"123456789012345600000001","InitialKey":"1273671ea26ac29afa4d1084127652a1","CurrentKSN":"123456789012345600000001","TransactionKey":"4f21b565bad9835e112b6465635eae44","CreatedAt":"..."},"error":null}
+```
+
+Get one machine, or all machines:
+
+```
+$ curl localhost:8095/machine/6ac292faa1315b4d858ab3a3d7d5933a
+{"machine":{"Algorithm":"des",...,"CurrentKSN":"FFFF9876543210E00001","TransactionKey":"042666b49184cfa368de9628d0397bc9","CreatedAt":"..."},"error":null}
+
+$ curl localhost:8095/machines
+{"machines":[{"Algorithm":"des",...},{"Algorithm":"aes",...}],"error":null}
+```
+
+Encrypt and decrypt a PIN. `Format` is a PIN block format such as `ISO-0` for des. aes always uses ISO-4, and its result changes on each call because ISO-4 adds random fill.
+
+```
+$ curl -XPOST localhost:8095/encrypt_pin/6ac292faa1315b4d858ab3a3d7d5933a -d '{"Pin":"1234","Pan":"4012345678909","Format":"ISO-0"}'
+{"encrypted":"1b9c1845eb993a7a","error":null}
+
+$ curl -XPOST localhost:8095/decrypt_pin/6ac292faa1315b4d858ab3a3d7d5933a -d '{"Encrypted":"1b9c1845eb993a7a","Pan":"4012345678909","Format":"ISO-0"}'
+{"decrypted":"1234","error":null}
+```
+
+Generate a MAC. `Action` is `request` or `response`. For aes, `MacType` is `cmac` or `hmac`; des ignores it.
+
+```
+$ curl -XPOST localhost:8095/generate_mac/6ac292faa1315b4d858ab3a3d7d5933a -d '{"Action":"request","Data":"4012345678909D987"}'
+{"generated":"9ccc78173fc4fb64","error":null}
+
+$ curl -XPOST localhost:8095/generate_mac/1273671ea26ac29afa4d1084127652a1 -d '{"Action":"request","Data":"hello","MacType":"cmac"}'
+{"generated":"3553b546f72923ccd6824cb572cdd893","error":null}
+```
+
+Encrypt and decrypt data. `Iv` is optional; when it is empty the server uses an IV of zeros. The decrypted data includes its zero padding.
+
+```
+$ curl -XPOST localhost:8095/encrypt_data/6ac292faa1315b4d858ab3a3d7d5933a -d '{"Action":"request","Data":"4012345678909D987"}'
+{"encrypted":"fc0d53b7ea1fda9ee68aaf2e70d9b9506229be2aa993f04f","error":null}
+
+$ curl -XPOST localhost:8095/decrypt_data/6ac292faa1315b4d858ab3a3d7d5933a -d '{"Action":"request","Data":"fc0d53b7ea1fda9ee68aaf2e70d9b9506229be2aa993f04f"}'
+{"data":"4012345678909D987\u0000\u0000\u0000\u0000\u0000\u0000\u0000","error":null}
+```
+
+Generate the next KSN. This request has no body. The machine then uses the new KSN and its transaction key for the PIN, MAC and data endpoints.
+
+```
+$ curl -XPOST localhost:8095/generate_ksn/6ac292faa1315b4d858ab3a3d7d5933a
+{"ksn":"ffff9876543210e00002","error":null}
 ```
 
 ## Supported and tested platforms
@@ -373,23 +521,23 @@ Note: 32-bit platforms have known issues and are not supported.
 
 ## Contributing
 
-Yes please! Please review our [Contributing guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started!
+Yes please! Please open an issue or pull request. Moov's [Contributing guide](https://github.com/moov-io/ach/blob/master/CONTRIBUTING.md) and [Code of Conduct](https://github.com/moov-io/ach/blob/master/CODE_OF_CONDUCT.md) also apply to this project.
 
-This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.18 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/imagecashletter/releases/latest) as well. We highly recommend you use a tagged release for production.
+This project uses [Go Modules](https://go.dev/blog/using-go-modules) and Go v1.26 or newer. See [Golang's install instructions](https://golang.org/doc/install) for help setting up Go. You can download the source code and we offer [tagged and released versions](https://github.com/moov-io/dukpt/releases/latest) as well. We highly recommend you use a tagged release for production.
 
 ### Releasing
 
-To make a release of dupkt simply open a pull request with `CHANGELOG.md` and `version.go` updated with the next version number and details. You'll also need to push the tag (i.e. `git push origin v1.0.0`) to origin in order for CI to make the release.
+To make a release of dukpt simply open a pull request with `version.go` updated with the next version number. You'll also need to push the tag (i.e. `git push origin v1.0.0`) to origin in order for CI to make the release.
 
 ### Testing
 
-We maintain a comprehensive suite of unit tests and recommend table-driven testing when a particular function warrants several very similar test cases. To run all test files in the current directory, use `go test`. Current overall coverage can be found on [Codecov](https://app.codecov.io/gh/moov-io/imagecashletter/).
+We maintain a comprehensive suite of unit tests and recommend table-driven testing when a particular function warrants several very similar test cases. To run all tests, use `go test ./...` or `make check`. Current overall coverage can be found on [Codecov](https://app.codecov.io/gh/moov-io/dukpt/).
 
 
 ## Related projects
 As part of Moov's initiative to offer open source fintech infrastructure, we have a large collection of active projects you may find useful:
 
-- [Moov DUPKT](https://github.com/moov-io/pinblock) offers functions for personal identification management (PIN) and security.
+- [Moov PIN Block](https://github.com/moov-io/pinblock) offers functions for personal identification management (PIN) and security.
 
 ## License
 
